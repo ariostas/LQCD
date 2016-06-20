@@ -51,7 +51,7 @@ ROOT::Math::BrentRootFinder brf;
 Double_t intArr[100], halfIntArr[100], zeroArr[100];
 
 // Main function
-void spec(){
+void protonSpec(){
 
     TH1::StatOverflows(kTRUE);
     
@@ -63,10 +63,10 @@ void spec(){
         intArr[x] = x; halfIntArr[x] = x+0.5; zeroArr[x] = 0;
     }
 
-    vector<vector<Double_t> > correlators020 = readData("pion.D2000.DG2p8284_1.DG2p8284_1.SS");
-    vector<vector<Double_t> > correlators010 = readData("pion.D1000.DG2p8284_1.DG2p8284_1.SS");
-    vector<vector<Double_t> > correlators005 = readData("pion.D500.DG2p8284_1.DG2p8284_1.SS");
-    vector<vector<Double_t> > correlators002 = readData("pion.D200.DG2p8284_1.DG2p8284_1.SS");
+    vector<vector<Double_t> > correlators020 = readData("proton.D2000.DG2_1.DG2_1.SS");
+    vector<vector<Double_t> > correlators010 = readData("proton.D1000.DG2_1.DG2_1.SS");
+    vector<vector<Double_t> > correlators005 = readData("proton.D500.DG2_1.DG2_1.SS");
+    vector<vector<Double_t> > correlators002 = readData("proton.D200.DG2_1.DG2_1.SS");
 
     // vector<vector<Double_t> > correlators020 = readData("pion.D2000.P_1.P_1.PP");
     // vector<vector<Double_t> > correlators010 = readData("pion.D1000.P_1.P_1.PP");
@@ -106,10 +106,10 @@ void spec(){
 
     vector<vector<Double_t> > masses(4);
     Double_t m1, m2, m3, m4, e1, e2, e3, e4;
-    m1 = findMassBoot(correlators020, 4, 12, e1, 1.99081, 1.34377e-03);
-    m2 = findMassBoot(correlators010, 4, 12, e2, 1.89002, 1.51954e-03);
-    m3 = findMassBoot(correlators005, 4, 12, e3, 1.83778, 1.61974e-03);
-    m4 = findMassBoot(correlators002, 4, 12, e4, 1.80585, 1.68432e-03);
+    m1 = findMassBoot(correlators020, 4, 12, e1, 3.09791, 5.06808e-05);
+    m2 = findMassBoot(correlators010, 4, 12, e2, 2.95140, 5.78541e-05);
+    m3 = findMassBoot(correlators005, 4, 12, e3, 2.87596, 6.16025e-05);
+    m4 = findMassBoot(correlators002, 4, 12, e4, 2.82826, 6.39234e-05);
 
     masses.at(0).push_back(m1); masses.at(0).push_back(e1); masses.at(0).push_back(4); masses.at(0).push_back(12);
     masses.at(1).push_back(m2); masses.at(1).push_back(e2); masses.at(1).push_back(4); masses.at(1).push_back(12);
@@ -118,34 +118,6 @@ void spec(){
 
     graph(massGraphs, massLabels, "#Deltat", "m_{eff}(#Deltat)", "massGraph", &masses);
 
-
-    // cout << m1 << " +- " << e1 << endl;
-    // cout << m2 << " +- " << e2 << endl;
-    // cout << m3 << " +- " << e3 << endl;
-    // cout << m4 << " +- " << e4 << endl;
-    // findMass(correlators010, 4, 14, mass, err);
-    // findMass(correlators005, 4, 14, mass, err);
-    // findMass(correlators002, 4, 14, mass, err);
-
-    // TH1D *hist = new TH1D("corr", "corr", 100, 0, 1);
-
-    // for(Int_t x = 0; x < correlators020.size(); x++){
-    //     hist->Fill(Log(correlators020.at(x).at(10)));
-    // }
-
-    // TCanvas *can = new TCanvas("sds", "sds", 1300, 900);
-
-    // hist->Draw();
-
-    TMatrixD w1 = weightMatrix(correlators020);
-    for(Int_t x = 0; x < 32; x++){
-        for(Int_t y = 0; y < 32; y++){
-            cout << w1(x,y) << "  ";
-        }
-        cout << endl;
-        
-    }
-
 }
 
 // Read correlator data from output of strip_hadspec
@@ -153,7 +125,7 @@ vector<vector<Double_t> > readData(TString filename){
 
     cout << "Reading " << filename << "..." << endl;
 
-    const TString fullFilename = "./Data/" + filename;
+    const TString fullFilename = "./VariationalData/" + filename;
 
     ifstream ifs(fullFilename); if(!ifs.is_open()){cout << "Error. File " << fullFilename << " not found. Exiting...\n"; assert(0);}
 
@@ -313,7 +285,7 @@ Double_t findMass(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double
         }
     }
 
-    TF2 *fitFunc = new TF2("Fit function", func, massGuess-0.5, massGuess+0.5, AGuess-0.005, AGuess+0.005);
+    TF2 *fitFunc = new TF2("Fit function", func, massGuess-0.2, massGuess+0.2, AGuess-0.0005, AGuess+0.0005);
 
     Double_t mass, A;
 
@@ -367,14 +339,14 @@ TMatrixD weightMatrix(vector<vector<Double_t> > corr){
     for(Int_t x = 0; x < n; x++){
         for(Int_t y = 0; y < n; y++){
             for(Int_t z = 0; z < N; z++){
-                covMatrix(x,y) += (corr.at(z).at(x)-av.at(x))*(corr.at(z).at(y)-av.at(y))*1e25;
+                covMatrix(x,y) += (corr.at(z).at(x)-av.at(x))*(corr.at(z).at(y)-av.at(y))*1e50;
             }
             covMatrix(x,y) = 1.0/((N-1.0)*N)*covMatrix(x,y);
         }
     }
 
     TMatrixD inv = covMatrix.Invert();
-    inv *= 1e-25;
+    inv *= 1e-50;
 
     return inv;
 
@@ -397,9 +369,9 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     if(mass != 0){
         cout << mass << endl;
         for(UInt_t x = 0; x < mass->size(); x++){
-            massFit.push_back(new TF1(TString::Format("mass name%i",x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
-            massFit.push_back(new TF1(TString::Format("mass+ name%i",x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
-            massFit.push_back(new TF1(TString::Format("mass- name%i",x), TString::Format("%1.6f", mass->at(x).at(0)-mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass+ %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass- %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)-mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
         }
         
     }
@@ -460,9 +432,11 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     // can->Update();
 
     // TF1 *f1 = new TF1(name, "2.0*[1]*TMath::Exp(-16.*[0])*TMath::CosH((16.-x)*[0])", 4, 10);
-    // f1->SetParameter(0, 2);
+    // f1->SetParameter(0, 3);
     // f1->SetParameter(1, 1e-3);
     // f1->SetLineColor(kBlack);
+    // graphs.at(0)->Fit(f1, "ME", "", 4, 10);
+    // graphs.at(1)->Fit(f1, "ME", "", 4, 10);
     // graphs.at(2)->Fit(f1, "ME", "", 4, 10);
     // graphs.at(3)->Fit(f1, "ME", "", 4, 10);
     // cout << f1->GetParameter(0) << endl;

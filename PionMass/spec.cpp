@@ -153,7 +153,9 @@ vector<vector<Double_t> > readData(TString filename){
 
     cout << "Reading " << filename << "..." << endl;
 
-    ifstream ifs(filename); if(!ifs.is_open()){cout << "Error. File " << filename << " not found. Exiting...\n"; assert(0);}
+    const TString fullFilename = "./Data/" + filename;
+
+    ifstream ifs(fullFilename); if(!ifs.is_open()){cout << "Error. File " << fullFilename << " not found. Exiting...\n"; assert(0);}
 
     Int_t NConfigs = 0, Nt = 0, IsComplex = 0, Ns = 0, temp = 0;
     ifs >> NConfigs >> Nt >> IsComplex >> Ns >> temp;

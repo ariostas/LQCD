@@ -42,3 +42,9 @@ __init__.py
 
 ## ROOT OBJECT
 *.root
+
+# Correlator data
+*.PP
+*.PS
+*.SP
+*.SS

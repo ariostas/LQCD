@@ -94,15 +94,15 @@ void pionSpecVar(){
 
     vector<TString> names = {"Ground state", "1st excited state", "Remaining states"};
 
-    graph(graphs020, names, "#Deltat", "Eigenvalues(#Deltat)", "corrs020", 0, "log");
-    graph(graphs010, names, "#Deltat", "Eigenvalues(#Deltat)", "corrs010", 0, "log");
-    graph(graphs005, names, "#Deltat", "Eigenvalues(#Deltat)", "corrs005", 0, "log");
-    graph(graphs002, names, "#Deltat", "Eigenvalues(#Deltat)", "corrs002", 0, "log");
+    graph(graphs020, names, "#Deltat", "Eigenvalues(#Deltat)", "pionVarCorrs020", 0, "log");
+    graph(graphs010, names, "#Deltat", "Eigenvalues(#Deltat)", "pionVarCorrs010", 0, "log");
+    graph(graphs005, names, "#Deltat", "Eigenvalues(#Deltat)", "pionVarCorrs005", 0, "log");
+    graph(graphs002, names, "#Deltat", "Eigenvalues(#Deltat)", "pionVarCorrs002", 0, "log");
 
-    graph(massgraphs020, names, "#Deltat", "M(#Deltat)", "mass020");
-    graph(massgraphs010, names, "#Deltat", "M(#Deltat)", "mass010");
-    graph(massgraphs005, names, "#Deltat", "M(#Deltat)", "mass005");
-    graph(massgraphs002, names, "#Deltat", "M(#Deltat)", "mass002");
+    graph(massgraphs020, names, "#Deltat", "M(#Deltat)", "pionVarMass020");
+    graph(massgraphs010, names, "#Deltat", "M(#Deltat)", "pionVarMass010");
+    graph(massgraphs005, names, "#Deltat", "M(#Deltat)", "pionVarMass005");
+    graph(massgraphs002, names, "#Deltat", "M(#Deltat)", "pionVarMass002");
 
 }
 
@@ -414,9 +414,9 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     if(mass != 0){
         cout << mass << endl;
         for(UInt_t x = 0; x < mass->size(); x++){
-            massFit.push_back(new TF1(TString::Format("mass %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
-            massFit.push_back(new TF1(TString::Format("mass+ %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
-            massFit.push_back(new TF1(TString::Format("mass- %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)-mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass1_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass2_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)-mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
         }
         
     }
@@ -452,7 +452,7 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
         mg->Add(graphs.at(x));
     }
     
-    if(name.Contains("corr")) mg->SetMinimum(1e-18);
+    if(name.Contains("Corr")) mg->SetMinimum(1e-18);
     mg->Draw("acp");
     leg->Draw("same");
     if(mass != 0){
@@ -486,6 +486,7 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     // cout << f1->GetParameter(0) << endl;
 
     can->SaveAs(name + ".png");
+    can->SaveAs("./Plots/" + name + ".cpp");
 
     //can->Clear();
 }

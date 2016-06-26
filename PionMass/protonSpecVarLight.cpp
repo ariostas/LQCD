@@ -35,6 +35,8 @@ using namespace std;
 vector<vector<vector<Double_t> > > readData(TString);
 vector<vector<Double_t> > average(vector<vector<vector<Double_t> > >);
 vector<vector<Double_t> > averageBoot(vector<vector<vector<Double_t> > >);
+vector<Double_t> average(vector<vector<Double_t> >);
+vector<Double_t> averageBoot(vector<vector<Double_t> >);
 vector<vector<Double_t> > errorBoot(vector<vector<vector<Double_t> > >);
 vector<TMatrixD> constructMatrices(vector<vector<Double_t> >);
 vector<vector<Double_t> > findEigenvalues(vector<TMatrixD>);
@@ -42,7 +44,11 @@ vector<vector<Double_t> > findEvalBoot(vector<vector<vector<Double_t> > >, vecto
 vector<vector<Double_t> > findEffMassesBoot(vector<vector<vector<Double_t> > >, vector<vector<Double_t> >&);
 vector<TGraphErrors*> makeGraphs(vector<vector<Double_t> >, vector<vector<Double_t> >, TString pos = "int");
 vector<vector<Double_t> > effMass(vector<vector<Double_t> >);
-// TMatrixD weightMatrices(vector<vector<Double_t> >);
+TMatrixD weightMatrix(vector<vector<Double_t> >);
+Double_t findMass(vector<vector<Double_t> >, Int_t, Int_t, Double_t, Double_t, Double_t *chi2 = 0);
+Double_t findMassBoot(vector<vector<Double_t> >, Int_t, Int_t, Double_t&, Double_t, Double_t, Double_t *chi2 = 0, Double_t *chi2err = 0);
+vector<vector<Double_t> > findGndCorr(vector<vector<vector<Double_t> > >);
+void scanFitRange(vector<vector<Double_t> >);
 void graph(vector<TGraphErrors*>, vector<TString>, const TString, const TString, const TString, vector<vector<Double_t> > *mass = 0, TString flags = "");
 
 // Declare common objects
@@ -52,7 +58,7 @@ vector<TString> corrTypes = {"P_1.P_1.PP", "DG2_1.P_1.SP", "DG4_1.P_1.SP", "P_1.
                              "P_1.DG4_1.PS", "DG2_1.DG4_1.SS", "DG4_1.DG4_1.SS"};
 
 // Main function
-void protonSpecVar(){
+void protonSpecVarLight(){
 
     TH1::StatOverflows(kTRUE);
     
@@ -62,42 +68,29 @@ void protonSpecVar(){
         intArr[x] = x; halfIntArr[x] = x+0.5; zeroArr[x] = 0;
     }
 
-    vector<vector<vector<Double_t> > > correlators020 = readData("2000");
-    vector<vector<vector<Double_t> > > correlators010 = readData("1000");
-    vector<vector<vector<Double_t> > > correlators005 = readData("500");
-    vector<vector<vector<Double_t> > > correlators002 = readData("200");
+    vector<vector<vector<Double_t> > > correlators092 = readData("-9199");
 
-    vector<vector<Double_t> > evalErrors020, evals020 = findEvalBoot(correlators020, evalErrors020);
-    vector<vector<Double_t> > evalErrors010, evals010 = findEvalBoot(correlators010, evalErrors010);
-    vector<vector<Double_t> > evalErrors005, evals005 = findEvalBoot(correlators005, evalErrors005);
-    vector<vector<Double_t> > evalErrors002, evals002 = findEvalBoot(correlators002, evalErrors002);
+    vector<vector<Double_t> > gndcorr092 = findGndCorr(correlators092);
+    vector<vector<Double_t> > evalErrors092, evals092 = findEvalBoot(correlators092, evalErrors092);
 
-    vector<vector<Double_t> > massErrors020, masses020 = findEffMassesBoot(correlators020, massErrors020);
-    vector<vector<Double_t> > massErrors010, masses010 = findEffMassesBoot(correlators010, massErrors010);
-    vector<vector<Double_t> > massErrors005, masses005 = findEffMassesBoot(correlators005, massErrors005);
-    vector<vector<Double_t> > massErrors002, masses002 = findEffMassesBoot(correlators002, massErrors002);
+    vector<vector<Double_t> > massErrors092, masses092 = findEffMassesBoot(correlators092, massErrors092);
 
-    vector<TGraphErrors*> graphs020 = makeGraphs(evals020, evalErrors020);
-    vector<TGraphErrors*> graphs010 = makeGraphs(evals010, evalErrors010);
-    vector<TGraphErrors*> graphs005 = makeGraphs(evals005, evalErrors005);
-    vector<TGraphErrors*> graphs002 = makeGraphs(evals002, evalErrors002);
+    vector<TGraphErrors*> graphs092 = makeGraphs(evals092, evalErrors092);
 
-    vector<TGraphErrors*> massgraphs020 = makeGraphs(masses020, massErrors020);
-    vector<TGraphErrors*> massgraphs010 = makeGraphs(masses010, massErrors010);
-    vector<TGraphErrors*> massgraphs005 = makeGraphs(masses005, massErrors005);
-    vector<TGraphErrors*> massgraphs002 = makeGraphs(masses002, massErrors002);
+    vector<TGraphErrors*> massgraphs092 = makeGraphs(masses092, massErrors092);
+
+    vector<vector<Double_t> > masses(1);
+    Double_t m1, e1;
+    m1 = findMassBoot(gndcorr092, 4, 14, e1, 7.33767e-01, 5.02458e-01);
+    masses.at(0).push_back(m1); masses.at(0).push_back(e1); masses.at(0).push_back(4); masses.at(0).push_back(14);
 
     vector<TString> names = {"Ground state", "1st excited state", "Remaining states"};
 
-    graph(graphs020, names, "#Deltat", "Eigenvalues(#Deltat)", "protonVarCorrs020", 0, "log");
-    graph(graphs010, names, "#Deltat", "Eigenvalues(#Deltat)", "protonVarCorrs010", 0, "log");
-    graph(graphs005, names, "#Deltat", "Eigenvalues(#Deltat)", "protonVarCorrs005", 0, "log");
-    graph(graphs002, names, "#Deltat", "Eigenvalues(#Deltat)", "protonVarCorrs002", 0, "log");
+    graph(graphs092, names, "#Deltat", "Eigenvalues(#Deltat)", "protonVarCorrs092", 0, "log");
 
-    graph(massgraphs020, names, "#Deltat", "M(#Deltat)", "protonVarMass020");
-    graph(massgraphs010, names, "#Deltat", "M(#Deltat)", "protonVarMass010");
-    graph(massgraphs005, names, "#Deltat", "M(#Deltat)", "protonVarMass005");
-    graph(massgraphs002, names, "#Deltat", "M(#Deltat)", "protonVarMass002");
+    graph(massgraphs092, names, "#Deltat", "M(#Deltat)", "protonVarMass092", &masses);
+
+    scanFitRange(gndcorr092);
 
 }
 
@@ -110,7 +103,7 @@ vector<vector<vector<Double_t> > > readData(TString mass){
 
     for(UInt_t x = 0; x < corrTypes.size(); x++){
 
-        TString filename = "./VariationalData/proton.D" + mass + "." + corrTypes.at(x);
+        TString filename = "./VariationalLight/proton.D" + mass + "." + corrTypes.at(x);
 
         ifstream ifs(filename); if(!ifs.is_open()){cout << "Error. File " << filename << " not found. Exiting...\n"; assert(0);}
 
@@ -257,7 +250,7 @@ vector<vector<Double_t> > findEigenvalues(vector<TMatrixD> mat){
 
 vector<vector<Double_t> > findEvalBoot(vector<vector<vector<Double_t> > > corr, vector<vector<Double_t> > &err){
 
-    Double_t N = corr.at(0).size(), NB = 5*N;
+    Double_t N = corr.at(0).size(), NB = N;
     vector<vector<vector<Double_t> > > evals;
     for(Int_t x = 0; x < NB; x++){
         vector<vector<vector<Double_t> > > tempcorr(corr.size());
@@ -299,6 +292,25 @@ vector<vector<Double_t> > findEvalBoot(vector<vector<vector<Double_t> > > corr, 
 
 }
 
+vector<vector<Double_t> > findGndCorr(vector<vector<vector<Double_t> > > corr){
+
+    Double_t N = corr.at(0).size();
+    vector<vector<Double_t> > gndcorr;
+    for(Int_t z = 0; z < N; z++){
+        vector<vector<Double_t> > tempcorr(corr.size());
+        for(UInt_t w = 0; w < corr.size(); w++){
+            tempcorr.at(w) = corr.at(w).at(z);
+        }
+
+        vector<TMatrixD> tempmat = constructMatrices(tempcorr);
+        tempcorr.clear();
+        gndcorr.push_back(findEigenvalues(tempmat).at(0));
+        tempmat.clear();
+    }
+
+    return gndcorr;
+}
+
 vector<vector<Double_t> > findEffMassesBoot(vector<vector<vector<Double_t> > > corr, vector<vector<Double_t> > &err){
 
     Double_t N = corr.at(0).size(), NB = 5*N;
@@ -322,8 +334,14 @@ vector<vector<Double_t> > findEffMassesBoot(vector<vector<vector<Double_t> > > c
         for(UInt_t y = 0; y < tempMass.size(); y++){
             for(UInt_t z = 0; z < tempeval.at(0).size()-1; z++){
                 Double_t m = Log(tempeval.at(y).at(z)/tempeval.at(y).at(z+1));
-                if(z > Double_t(tempeval.at(0).size())/2.) m *= -1.;
+                if(z > Double_t(tempeval.at(y).size())/2.) m *= -1.;
                 tempMass.at(y).push_back(m);
+
+                // massFunc.FixParameter(2, tempeval.at(0).size());
+                // massFunc.FixParameter(1, z);
+                // massFunc.FixParameter(0, tempeval.at(y).at(z)/tempeval.at(y).at(z+1));
+                // brf.Solve();
+                // tempMass.at(y).push_back(brf.Root());
             }
         }
         tempeval.clear();
@@ -367,28 +385,192 @@ vector<TGraphErrors*> makeGraphs(vector<vector<Double_t> > evals, vector<vector<
 
 }
 
-// TMatrixD weightMatrix(vector<vector<Double_t> > corr){
+Double_t findMass(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double_t massGuess, Double_t AGuess, Double_t *chi2){
 
-//     Int_t n = corr.at(0).size();
-//     Double_t N = corr.size();
-//     vector<Double_t> av = average(corr);
-//     TMatrixD covMatrix(n, n);
+    vector<Double_t> av = averageBoot(corr);
+    Double_t N = av.size();
+    TMatrixD w = weightMatrix(corr);
 
-//     for(Int_t x = 0; x < n; x++){
-//         for(Int_t y = 0; y < n; y++){
-//             for(Int_t z = 0; z < N; z++){
-//                 covMatrix(x,y) += (corr.at(z).at(x)-av.at(x))*(corr.at(z).at(y)-av.at(y))*1e25;
-//             }
-//             covMatrix(x,y) = 1.0/((N-1.0)*N)*covMatrix(x,y);
-//         }
-//     }
+    TString func;
 
-//     TMatrixD inv = covMatrix.Invert();
-//     inv *= 1e-25;
+    for(Int_t x = nmin; x <= nmax; x++){
+        for(Int_t y = nmin; y <= nmax; y++){
+            func.Append(TString::Format("+(%1.6g-y*TMath::Exp(-%1.1f*x))", av.at(x), float(x)));
+            func.Append(TString::Format("*%1.6g", w(x,y)));
+            func.Append(TString::Format("*(%1.6g-y*TMath::Exp(-%1.1f*x))", av.at(y), float(y)));
+        }
+    }
 
-//     return inv;
+    TF2 *fitFunc = new TF2("Fit function", func, massGuess-0.5, massGuess+0.5, AGuess-0.5, AGuess+0.5);
 
-// }
+    Double_t mass, A;
+
+    fitFunc->GetMinimumXY(mass, A);
+
+    if(chi2 != 0) (*chi2) = fitFunc->Eval(mass, A)/Double_t(nmax - nmin - 1);
+
+    // cout << "chi2: " << fitFunc->Eval(mass, A) << endl;
+
+    delete fitFunc;
+
+    // massFunc.FixParameter(1, nmin);
+    // massFunc.FixParameter(0, av.at(nmin)/av.at(nmin+1));
+    // brf.Solve();
+
+    // cout << mass << endl;
+
+    return mass;
+    
+}
+
+Double_t findMassBoot(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double_t &err, Double_t massGuess, Double_t AGuess, Double_t *chi2, Double_t *chi2err){
+
+    Double_t N = corr.size(), NB = Nint(N/20);
+    vector<Double_t> tempMasses, tempchi2(NB);
+    for(Int_t x = 0; x < NB; x++){
+        if(x == 0) cout << TString::Format("Performing bootstrap on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
+        else cout << TString::Format("\e[APerforming bootstrap on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
+        if(x == NB-1) cout << TString::Format("\e[APerforming bootstrap on masses... \033[1;32mdone\033[0m\n");
+        vector<vector<Double_t> > temp;
+        for(Int_t y = 0; y < N; y++){
+            temp.push_back(corr.at(randGen->Integer(N)));
+        }
+        tempMasses.push_back(findMass(temp, nmin, nmax, massGuess, AGuess, &(tempchi2.at(x))));
+        temp.clear();
+    }
+    Double_t mass = 0;
+    for(UInt_t x = 0; x < NB; x++){
+        mass += tempMasses.at(x);
+    }
+    mass /= NB;
+    err = 0;
+    for(UInt_t x = 0; x < NB; x++){
+        err += (tempMasses.at(x)-mass)*(tempMasses.at(x)-mass);
+    }
+    err = Sqrt(1./NB*err);
+
+    Double_t c2 = 0, c2e = 0;
+    for(UInt_t x = 0; x < NB; x++){
+        c2 += tempchi2.at(x);
+    }
+    c2 /= NB;
+
+    for(UInt_t x = 0; x < NB; x++){
+        c2e += (tempchi2.at(x)-c2)*(tempchi2.at(x)-c2);
+    }
+    c2e = Sqrt(1./NB*c2e);
+
+    if(chi2 != 0) (*chi2) = c2;
+    if(chi2err != 0) (*chi2err) = c2e;
+
+    return mass;
+
+}
+
+TMatrixD weightMatrix(vector<vector<Double_t> > corr){
+
+    Int_t n = corr.at(0).size();
+    Double_t N = corr.size();
+    vector<Double_t> av = average(corr);
+    TMatrixD covMatrix(n, n);
+
+    for(Int_t x = 0; x < n; x++){
+        for(Int_t y = 0; y < n; y++){
+            for(Int_t z = 0; z < N; z++){
+                covMatrix(x,y) += (corr.at(z).at(x)-av.at(x))*(corr.at(z).at(y)-av.at(y));
+            }
+            covMatrix(x,y) = 1.0/((N-1.0)*N)*covMatrix(x,y)*1e20;
+        }
+    }
+
+    TMatrixD inv = covMatrix.Invert();
+    inv *= 1e20;
+
+    return inv;
+
+}
+
+vector<Double_t> average(vector<vector<Double_t> > corr){
+    vector<Double_t> av;
+    for(UInt_t x = 0; x < corr.at(0).size(); x++){
+        Double_t sum = 0, N = corr.size();
+        for(UInt_t y = 0; y < corr.size(); y++){
+            sum += corr.at(y).at(x);
+        }
+        av.push_back(sum/N);
+    }
+    return av;
+}
+
+vector<Double_t> averageBoot(vector<vector<Double_t> > corr){
+    vector<Double_t> av(corr.at(0).size());
+    Double_t N = corr.size();
+    for(Int_t x = 0; x < 5*N; x++){
+        vector<vector<Double_t> > temp;
+        for(Int_t y = 0; y < N; y++){
+            temp.push_back(corr.at(randGen->Integer(N)));
+        }
+        vector<Double_t> tempAv = average(temp);
+        for(UInt_t y = 0; y < av.size(); y++){
+            av.at(y) += tempAv.at(y);
+        }
+        temp.clear();
+    }
+    for(UInt_t y = 0; y < av.size(); y++){
+        av.at(y) = 1./(5.*N)*av.at(y);
+    }    
+    return av;
+}
+
+void scanFitRange(vector<vector<Double_t> > corr){
+
+    Double_t arr[100];
+    for(Int_t x = 1; x < 101; x++){
+        arr[x-1] = x;
+    }
+
+    Int_t N = 12;
+    vector<Double_t> m(N), me(N), c2(N), c2e(N);
+
+    for(Int_t x = 0; x < N; x++){
+        m.at(x) = findMassBoot(corr, 12-x, 14, me.at(x), 7.33767e-01, 5.11457e-05, &(c2.at(x)), &(c2e.at(x)));
+    }
+
+    TGraphErrors *massScan = new TGraphErrors(N, arr, &m[0], zeroArr, &me[0]);
+    TGraphErrors *chiScan = new TGraphErrors(N, arr, &c2[0], zeroArr, &c2e[0]);
+
+    TCanvas *can = new TCanvas("scan", "scan", 1300, 900);
+
+    can->Divide(1,2);
+    can->cd(1);
+    massScan->SetLineWidth(2);
+    massScan->SetMarkerStyle(21);
+    massScan->SetTitle("");
+    massScan->GetXaxis()->SetTitle("Fit range (#Deltat away from Nt/2)");
+    massScan->GetXaxis()->CenterTitle();
+    massScan->GetXaxis()->SetLabelSize(0.04);
+    massScan->GetXaxis()->SetTitleSize(0.05);
+    massScan->GetYaxis()->SetTitle("Mass");
+    massScan->GetYaxis()->CenterTitle();
+    massScan->GetYaxis()->SetLabelSize(0.04);
+    massScan->GetYaxis()->SetTitleSize(0.05);
+    chiScan->SetLineWidth(2);
+    chiScan->SetMarkerStyle(21);
+    chiScan->SetTitle("");
+    chiScan->GetXaxis()->SetTitle("Fit range (#Deltat away from Nt/2)");
+    chiScan->GetXaxis()->CenterTitle();
+    chiScan->GetXaxis()->SetLabelSize(0.04);
+    chiScan->GetXaxis()->SetTitleSize(0.05);
+    chiScan->GetYaxis()->SetTitle("#chi^{2}/d.o.f");
+    chiScan->GetYaxis()->CenterTitle();
+    chiScan->GetYaxis()->SetLabelSize(0.04);
+    chiScan->GetYaxis()->SetTitleSize(0.05);
+
+    massScan->Draw("ap");
+    can->cd(2);
+    chiScan->Draw("ap");
+
+}
 
 void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TString xTitle, const TString yTitle, const TString name, vector<vector<Double_t> > *mass, TString flags){
 
@@ -405,7 +587,7 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
 
     vector<TF1*> massFit;
     if(mass != 0){
-        cout << mass << endl;
+        // cout << mass << endl;
         for(UInt_t x = 0; x < mass->size(); x++){
             massFit.push_back(new TF1(TString::Format("mass_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
             massFit.push_back(new TF1(TString::Format("mass1_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
@@ -426,11 +608,13 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
         graphs.at(x)->SetLineColor(colors.at(x%6));
 
         if(mass != 0){
-            massFit.at(3*x)->SetLineColor(colors.at(x%6));
-            massFit.at(3*x+1)->SetLineColor(colors.at(x%6));
-            massFit.at(3*x+2)->SetLineColor(colors.at(x%6));
-            massFit.at(3*x+1)->SetLineStyle(7);
-            massFit.at(3*x+2)->SetLineStyle(7);
+            if(x < mass->size()){
+                massFit.at(3*x)->SetLineColor(colors.at(x%6));
+                massFit.at(3*x+1)->SetLineColor(colors.at(x%6));
+                massFit.at(3*x+2)->SetLineColor(colors.at(x%6));
+                massFit.at(3*x+1)->SetLineStyle(7);
+                massFit.at(3*x+2)->SetLineStyle(7);
+            }
         }
     }
 
@@ -445,7 +629,7 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
         mg->Add(graphs.at(x));
     }
     
-    if(name.Contains("Corr")) mg->SetMinimum(1e-22);
+    if(name.Contains("Corr")) mg->SetMinimum(1e-18);
     mg->Draw("acp");
     leg->Draw("same");
     if(mass != 0){
@@ -471,11 +655,11 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     // can->Update();
 
     // TF1 *f1 = new TF1(name, "2.0*[1]*TMath::Exp(-16.*[0])*TMath::CosH((16.-x)*[0])", 4, 10);
-    // f1->SetParameter(0, 2);
-    // f1->SetParameter(1, 1e-3);
+    // f1->SetParameter(0, 0.7);
+    // f1->SetParLimits(0, 0, 2);
+    // f1->SetParameter(1, 1e-2);
     // f1->SetLineColor(kBlack);
-    // graphs.at(2)->Fit(f1, "ME", "", 4, 10);
-    // graphs.at(3)->Fit(f1, "ME", "", 4, 10);
+    // graphs.at(0)->Fit(f1, "ME", "", 4, 14);
     // cout << f1->GetParameter(0) << endl;
 
     can->SaveAs(name + ".png");

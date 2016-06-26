@@ -86,7 +86,7 @@ void pionSpec(){
 
     vector<TString> massLabels = {"m = 0.20", "m = 0.10", "m = 0.05", "m = 0.02"};
 
-    graph(corrGraphs, massLabels, "#Deltat", "C(#Deltat)", "corrGraph", 0, "log");
+    graph(corrGraphs, massLabels, "#Deltat", "C(#Deltat)", "pionCorrGraph", 0, "log");
 
     vector<vector<Double_t> > masses020 = effMass(correlators020);
     vector<vector<Double_t> > masses010 = effMass(correlators010);
@@ -106,17 +106,17 @@ void pionSpec(){
 
     vector<vector<Double_t> > masses(4);
     Double_t m1, m2, m3, m4, e1, e2, e3, e4;
-    m1 = findMassBoot(correlators020, 4, 12, e1, 1.99081, 1.34377e-03);
-    m2 = findMassBoot(correlators010, 4, 12, e2, 1.89002, 1.51954e-03);
-    m3 = findMassBoot(correlators005, 4, 12, e3, 1.83778, 1.61974e-03);
-    m4 = findMassBoot(correlators002, 4, 12, e4, 1.80585, 1.68432e-03);
+    m1 = findMassBoot(correlators020, 4, 14, e1, 1.99081, 1.34377e-03);
+    m2 = findMassBoot(correlators010, 4, 14, e2, 1.89002, 1.51954e-03);
+    m3 = findMassBoot(correlators005, 4, 14, e3, 1.83778, 1.61974e-03);
+    m4 = findMassBoot(correlators002, 4, 14, e4, 1.80585, 1.68432e-03);
 
     masses.at(0).push_back(m1); masses.at(0).push_back(e1); masses.at(0).push_back(4); masses.at(0).push_back(12);
     masses.at(1).push_back(m2); masses.at(1).push_back(e2); masses.at(1).push_back(4); masses.at(1).push_back(12);
     masses.at(2).push_back(m3); masses.at(2).push_back(e3); masses.at(2).push_back(4); masses.at(2).push_back(12);
     masses.at(3).push_back(m4); masses.at(3).push_back(e4); masses.at(3).push_back(4); masses.at(3).push_back(12);
 
-    graph(massGraphs, massLabels, "#Deltat", "m_{eff}(#Deltat)", "massGraph", &masses);
+    graph(massGraphs, massLabels, "#Deltat", "m_{eff}(#Deltat)", "pionMassGraph", &masses);
 
 }
 
@@ -304,9 +304,9 @@ Double_t findMassBoot(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Do
     Double_t N = corr.size(), NB = 2*N;
     vector<Double_t> tempMasses;
     for(Int_t x = 0; x < NB; x++){
-        if(x == 0) cout << TString::Format("Performing bootstrapping on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
-        else cout << TString::Format("\e[APerforming bootstrapping on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
-        if(x == NB-1) cout << TString::Format("\e[APerforming bootstrapping on masses... \033[1;32mdone\033[0m\n");
+        if(x == 0) cout << TString::Format("Performing bootstrap on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
+        else cout << TString::Format("\e[APerforming bootstrap on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
+        if(x == NB-1) cout << TString::Format("\e[APerforming bootstrap on masses... \033[1;32mdone\033[0m\n");
         vector<vector<Double_t> > temp;
         for(Int_t y = 0; y < N; y++){
             temp.push_back(corr.at(randGen->Integer(N)));
@@ -369,9 +369,9 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     if(mass != 0){
         cout << mass << endl;
         for(UInt_t x = 0; x < mass->size(); x++){
-            massFit.push_back(new TF1(TString::Format("mass %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
-            massFit.push_back(new TF1(TString::Format("mass+ %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
-            massFit.push_back(new TF1(TString::Format("mass- %s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)-mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass1_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
+            massFit.push_back(new TF1(TString::Format("mass2_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)-mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
         }
         
     }
@@ -440,6 +440,7 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     // cout << f1->GetParameter(0) << endl;
 
     can->SaveAs(name + ".png");
+    can->SaveAs("./Plots/" + name + ".cpp");
 
     //can->Clear();
 }

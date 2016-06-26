@@ -37,86 +37,52 @@ vector<Double_t> averageBoot(vector<vector<Double_t> >);
 vector<Double_t> errorStd(vector<vector<Double_t> >);
 vector<Double_t> errorJack(vector<vector<Double_t> >);
 vector<Double_t> errorBoot(vector<vector<Double_t> >);
-vector<vector<Double_t> > effMass(vector<vector<Double_t> >);
+vector<Double_t> effMassBoot(vector<vector<Double_t> >, vector<Double_t>&);
 TMatrixD weightMatrix(vector<vector<Double_t> >);
-Double_t findMass(vector<vector<Double_t> >, Int_t, Int_t, Double_t, Double_t);
-Double_t findMassBoot(vector<vector<Double_t> >, Int_t, Int_t, Double_t&, Double_t, Double_t);
+Double_t findMass(vector<vector<Double_t> >, Int_t, Int_t, Double_t, Double_t, Double_t *chi2 = 0);
+Double_t findMassBoot(vector<vector<Double_t> >, Int_t, Int_t, Double_t&, Double_t, Double_t, Double_t *chi2 = 0, Double_t *chi2err = 0);
+void scanFitRange(vector<vector<Double_t> >);
 void graph(vector<TGraphErrors*>, vector<TString>, const TString, const TString, const TString, vector<vector<Double_t> > *mass = 0, TString flags = "");
 
 // Declare common objects
 TRandom3 *randGen = new TRandom3();
-TF1 massFunc("Mass Function", "cosh(x*(double([1])-double([2])/2.0))/cosh(x*(double([1])+1.0-double([2])/2.0))-double([0])", 0, 5);
-ROOT::Math::WrappedTF1 wmf(massFunc);
-ROOT::Math::BrentRootFinder brf;
 Double_t intArr[100], halfIntArr[100], zeroArr[100];
 
 // Main function
-void protonSpec(){
+void protonSpecLight(){
 
     TH1::StatOverflows(kTRUE);
     
     cout << "\n\nStarting process...\n\n";
 
-    brf.SetFunction(wmf, 0, 5);
-
     for(Int_t x = 0; x < 100; x++){
         intArr[x] = x; halfIntArr[x] = x+0.5; zeroArr[x] = 0;
     }
 
-    vector<vector<Double_t> > correlators020 = readData("proton.D2000.DG2_1.DG2_1.SS");
-    vector<vector<Double_t> > correlators010 = readData("proton.D1000.DG2_1.DG2_1.SS");
-    vector<vector<Double_t> > correlators005 = readData("proton.D500.DG2_1.DG2_1.SS");
-    vector<vector<Double_t> > correlators002 = readData("proton.D200.DG2_1.DG2_1.SS");
+    vector<vector<Double_t> > correlators092 = readData("proton.D-9199.DG2_1.DG2_1.SS");
 
-    // vector<vector<Double_t> > correlators020 = readData("pion.D2000.P_1.P_1.PP");
-    // vector<vector<Double_t> > correlators010 = readData("pion.D1000.P_1.P_1.PP");
-    // vector<vector<Double_t> > correlators005 = readData("pion.D500.P_1.P_1.PP");
-    // vector<vector<Double_t> > correlators002 = readData("pion.D200.P_1.P_1.PP");
-
-    vector<Double_t> avCorr020 = averageBoot(correlators020), errCorr020 = errorBoot(correlators020);
-    vector<Double_t> avCorr010 = averageBoot(correlators010), errCorr010 = errorBoot(correlators010);
-    vector<Double_t> avCorr005 = averageBoot(correlators005), errCorr005 = errorBoot(correlators005);
-    vector<Double_t> avCorr002 = averageBoot(correlators002), errCorr002 = errorBoot(correlators002);
+    vector<Double_t> avCorr092 = averageBoot(correlators092), errCorr092 = errorBoot(correlators092);
 
     vector<TGraphErrors*> corrGraphs;
-    corrGraphs.push_back(new TGraphErrors(avCorr020.size(), intArr, &avCorr020[0], zeroArr, &errCorr020[0]));
-    corrGraphs.push_back(new TGraphErrors(avCorr010.size(), intArr, &avCorr010[0], zeroArr, &errCorr010[0]));
-    corrGraphs.push_back(new TGraphErrors(avCorr005.size(), intArr, &avCorr005[0], zeroArr, &errCorr005[0]));
-    corrGraphs.push_back(new TGraphErrors(avCorr002.size(), intArr, &avCorr002[0], zeroArr, &errCorr002[0]));
+    corrGraphs.push_back(new TGraphErrors(avCorr092.size(), intArr, &avCorr092[0], zeroArr, &errCorr092[0]));
 
-    vector<TString> massLabels = {"m = 0.20", "m = 0.10", "m = 0.05", "m = 0.02"};
+    vector<TString> massLabels = {"m = -0.92"};
 
     graph(corrGraphs, massLabels, "#Deltat", "C(#Deltat)", "protonCorrGraph", 0, "log");
 
-    vector<vector<Double_t> > masses020 = effMass(correlators020);
-    vector<vector<Double_t> > masses010 = effMass(correlators010);
-    vector<vector<Double_t> > masses005 = effMass(correlators005);
-    vector<vector<Double_t> > masses002 = effMass(correlators002);
-
-    vector<Double_t> avMass020 = averageBoot(masses020), errMass020 = errorBoot(masses020);
-    vector<Double_t> avMass010 = averageBoot(masses010), errMass010 = errorBoot(masses010);
-    vector<Double_t> avMass005 = averageBoot(masses005), errMass005 = errorBoot(masses005);
-    vector<Double_t> avMass002 = averageBoot(masses002), errMass002 = errorBoot(masses002);
+    vector<Double_t> errMass092, avMass092 = effMassBoot(correlators092, errMass092);
 
     vector<TGraphErrors*> massGraphs;
-    massGraphs.push_back(new TGraphErrors(avMass020.size(), halfIntArr, &avMass020[0], zeroArr, &errMass020[0]));
-    massGraphs.push_back(new TGraphErrors(avMass010.size(), halfIntArr, &avMass010[0], zeroArr, &errMass010[0]));
-    massGraphs.push_back(new TGraphErrors(avMass005.size(), halfIntArr, &avMass005[0], zeroArr, &errMass005[0]));
-    massGraphs.push_back(new TGraphErrors(avMass002.size(), halfIntArr, &avMass002[0], zeroArr, &errMass002[0]));
+    massGraphs.push_back(new TGraphErrors(avMass092.size(), halfIntArr, &avMass092[0], zeroArr, &errMass092[0]));
+    vector<vector<Double_t> > masses(1);
+    Double_t m1, e1;
+    m1 = findMassBoot(correlators092, 5, 14, e1, 7.33767e-01, 5.11457e-05);
 
-    vector<vector<Double_t> > masses(4);
-    Double_t m1, m2, m3, m4, e1, e2, e3, e4;
-    m1 = findMassBoot(correlators020, 4, 14, e1, 3.09791, 5.06808e-05);
-    m2 = findMassBoot(correlators010, 4, 14, e2, 2.95140, 5.78541e-05);
-    m3 = findMassBoot(correlators005, 4, 14, e3, 2.87596, 6.16025e-05);
-    m4 = findMassBoot(correlators002, 4, 14, e4, 2.82826, 6.39234e-05);
-
-    masses.at(0).push_back(m1); masses.at(0).push_back(e1); masses.at(0).push_back(4); masses.at(0).push_back(12);
-    masses.at(1).push_back(m2); masses.at(1).push_back(e2); masses.at(1).push_back(4); masses.at(1).push_back(12);
-    masses.at(2).push_back(m3); masses.at(2).push_back(e3); masses.at(2).push_back(4); masses.at(2).push_back(12);
-    masses.at(3).push_back(m4); masses.at(3).push_back(e4); masses.at(3).push_back(4); masses.at(3).push_back(12);
+    masses.at(0).push_back(m1); masses.at(0).push_back(e1); masses.at(0).push_back(5); masses.at(0).push_back(14);
 
     graph(massGraphs, massLabels, "#Deltat", "m_{eff}(#Deltat)", "protonMassGraph", &masses);
+
+    // scanFitRange(correlators092);
 
 }
 
@@ -125,7 +91,7 @@ vector<vector<Double_t> > readData(TString filename){
 
     cout << "Reading " << filename << "..." << endl;
 
-    const TString fullFilename = "./VariationalData/" + filename;
+    const TString fullFilename = "./VariationalLight/" + filename;
 
     ifstream ifs(fullFilename); if(!ifs.is_open()){cout << "Error. File " << fullFilename << " not found. Exiting...\n"; assert(0);}
 
@@ -249,27 +215,57 @@ vector<Double_t> errorBoot(vector<vector<Double_t> > corr){
     return err;
 }
 
-vector<vector<Double_t> > effMass(vector<vector<Double_t> > corr){
-    vector<vector<Double_t> > masses;
-    vector<Double_t> temp;
-    for(UInt_t x = 0; x < corr.size();x++){
-        masses.push_back(temp);
+vector<Double_t> effMassBoot(vector<vector<Double_t> > corr, vector<Double_t> &err){
+
+    Double_t N = corr.size(), NB = 5.*N;
+    vector<vector<Double_t> > allMasses;
+    for(Int_t x = 0; x < NB; x++){
+        vector<vector<Double_t> > tempcorr;
+        for(Int_t y = 0; y < N; y++){
+            tempcorr.push_back(corr.at(randGen->Integer(N)));
+        }
+        vector<Double_t> tempmass, tempAv = average(tempcorr);
+        for(UInt_t y = 0; y < tempAv.size()-1; y++){
+            Double_t m = Log(tempAv.at(y)/tempAv.at(y+1));
+            if(y > Double_t(tempAv.size())/2.) m *= -1.;
+            tempmass.push_back(m);
+
+            // massFunc.FixParameter(1, y);
+            // massFunc.FixParameter(0, tempAv.at(y)/tempAv.at(y+1));
+            // brf.Solve();
+            // tempmass.push_back(brf.Root());
+        }
+        tempcorr.clear();
+        tempAv.clear();
+        allMasses.push_back(tempmass);
+        tempmass.clear();
     }
-    massFunc.FixParameter(2, corr.at(0).size());
-    for(UInt_t x = 0; x < corr.size();x++){
-        for(UInt_t y = 0; y < corr.at(0).size()-1; y++){
-            massFunc.FixParameter(1, y);
-            massFunc.FixParameter(0, corr.at(x).at(y)/corr.at(x).at(y+1));
-            // masses.at(x).push_back(massFunc->GetX(0., 0., 2., 1e-15, 100000));
-            // masses.at(x).push_back(Log(corr.at(x).at(y)/corr.at(x).at(y+1)));
-            brf.Solve();
-            masses.at(x).push_back(brf.Root());
+
+    vector<Double_t> masses(corr.at(0).size()-1);
+    for(UInt_t x = 0; x < NB; x++){
+        for(UInt_t y = 0; y < allMasses.at(0).size(); y++){
+            masses.at(y) += allMasses.at(x).at(y);
         }
     }
+    for(UInt_t x = 0; x < masses.size(); x++){
+        masses.at(x) /= NB;
+    }
+
+    vector<Double_t> error(corr.at(0).size()-1);
+    for(UInt_t x = 0; x < NB; x++){
+        for(UInt_t y = 0; y < allMasses.at(0).size(); y++){
+            error.at(y) += (allMasses.at(x).at(y)-masses.at(y))*(allMasses.at(x).at(y)-masses.at(y));
+        }
+    }
+    for(UInt_t x = 0; x < error.size(); x++){
+        error.at(x) = Sqrt(1./NB*error.at(x));
+    }
+
+    err = error;
     return masses;
 }
 
-Double_t findMass(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double_t massGuess, Double_t AGuess){
+Double_t findMass(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double_t massGuess, Double_t AGuess, Double_t *chi2){
 
     vector<Double_t> av = averageBoot(corr);
     Double_t N = av.size();
@@ -279,30 +275,43 @@ Double_t findMass(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double
 
     for(Int_t x = nmin; x <= nmax; x++){
         for(Int_t y = nmin; y <= nmax; y++){
-            func.Append(TString::Format("+(%1.6g-2.0*y*exp(-%1.1f*x/2.0)*cosh((%1.1f/2.0-%1.1f)*x))", av.at(x), N, N, Double_t(x)));
+            func.Append(TString::Format("+(%1.6g-y*TMath::Exp(-%1.1f*x))", av.at(x), float(x)));
             func.Append(TString::Format("*%1.6g", w(x,y)));
-            func.Append(TString::Format("*(%1.6g-2.0*y*exp(-%1.1f*x/2.0)*cosh((%1.1f/2.0-%1.1f)*x))", av.at(y), N, N, Double_t(y)));
+            func.Append(TString::Format("*(%1.6g-y*TMath::Exp(-%1.1f*x))", av.at(y), float(y)));
+            // func.Append(TString::Format("+(%1.6g-2.0*y*exp(-%1.1f*x/2.0)*cosh((%1.1f/2.0-%1.1f)*x))", av.at(x), N, N, Double_t(x)));
+            // func.Append(TString::Format("*%1.6g", w(x,y)));
+            // func.Append(TString::Format("*(%1.6g-2.0*y*exp(-%1.1f*x/2.0)*cosh((%1.1f/2.0-%1.1f)*x))", av.at(y), N, N, Double_t(y)));
         }
     }
 
-    TF2 *fitFunc = new TF2("Fit function", func, massGuess-0.2, massGuess+0.2, AGuess-0.0005, AGuess+0.0005);
+    // cout << func << endl;
+
+    TF2 *fitFunc = new TF2("Fit function", func, massGuess-0.5, massGuess+0.5, AGuess-0.0005, AGuess+0.0005);
 
     Double_t mass, A;
 
     fitFunc->GetMinimumXY(mass, A);
 
+    if(chi2 != 0) (*chi2) = fitFunc->Eval(mass, A)/Double_t(nmax - nmin - 1);
+
+    // cout << "chi2: " << fitFunc->Eval(mass, A) << endl;
+
     delete fitFunc;
 
-    // cout << mass << "  " << A << endl;
+    // massFunc.FixParameter(1, nmin);
+    // massFunc.FixParameter(0, av.at(nmin)/av.at(nmin+1));
+    // brf.Solve();
+
+    // cout << mass << "  " << brf.Root() << endl;
 
     return mass;
     
 }
 
-Double_t findMassBoot(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double_t &err, Double_t massGuess, Double_t AGuess){
+Double_t findMassBoot(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Double_t &err, Double_t massGuess, Double_t AGuess, Double_t *chi2, Double_t *chi2err){
 
-    Double_t N = corr.size(), NB = 2*N;
-    vector<Double_t> tempMasses;
+    Double_t N = corr.size(), NB = Nint(N/4);
+    vector<Double_t> tempMasses, tempchi2(NB);
     for(Int_t x = 0; x < NB; x++){
         if(x == 0) cout << TString::Format("Performing bootstrap on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
         else cout << TString::Format("\e[APerforming bootstrap on masses... %3.0f\%\n", Double_t(x)/Double_t(NB)*100.);
@@ -311,7 +320,7 @@ Double_t findMassBoot(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Do
         for(Int_t y = 0; y < N; y++){
             temp.push_back(corr.at(randGen->Integer(N)));
         }
-        tempMasses.push_back(findMass(temp, nmin, nmax, massGuess, AGuess));
+        tempMasses.push_back(findMass(temp, nmin, nmax, massGuess, AGuess, &(tempchi2.at(x))));
         temp.clear();
     }
     Double_t mass = 0;
@@ -324,6 +333,20 @@ Double_t findMassBoot(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Do
         err += (tempMasses.at(x)-mass)*(tempMasses.at(x)-mass);
     }
     err = Sqrt(1./NB*err);
+
+    Double_t c2 = 0, c2e = 0;
+    for(UInt_t x = 0; x < NB; x++){
+        c2 += tempchi2.at(x);
+    }
+    c2 /= NB;
+
+    for(UInt_t x = 0; x < NB; x++){
+        c2e += (tempchi2.at(x)-c2)*(tempchi2.at(x)-c2);
+    }
+    c2e = Sqrt(1./NB*c2e);
+
+    if(chi2 != 0) (*chi2) = c2;
+    if(chi2err != 0) (*chi2err) = c2e;
 
     return mass;
 
@@ -339,16 +362,70 @@ TMatrixD weightMatrix(vector<vector<Double_t> > corr){
     for(Int_t x = 0; x < n; x++){
         for(Int_t y = 0; y < n; y++){
             for(Int_t z = 0; z < N; z++){
-                covMatrix(x,y) += (corr.at(z).at(x)-av.at(x))*(corr.at(z).at(y)-av.at(y))*1e50;
+                covMatrix(x,y) += (corr.at(z).at(x)-av.at(x))*(corr.at(z).at(y)-av.at(y));
             }
-            covMatrix(x,y) = 1.0/((N-1.0)*N)*covMatrix(x,y);
+            covMatrix(x,y) = 1.0/((N-1.0)*N)*covMatrix(x,y)*1e30;
         }
     }
 
     TMatrixD inv = covMatrix.Invert();
-    inv *= 1e-50;
 
+    inv *= 1e30;
     return inv;
+
+}
+
+void scanFitRange(vector<vector<Double_t> > corr){
+
+    Double_t arr[100];
+    for(Int_t x = 1; x < 101; x++){
+        arr[x-1] = x;
+    }
+
+    Int_t N = 11;
+    vector<Double_t> m(N), me(N), c2(N), c2e(N);
+
+    for(Int_t x = 0; x < N; x++){
+        m.at(x) = findMassBoot(corr, 12-x, 14, me.at(x), 7.33767e-01, 5.11457e-05, &(c2.at(x)), &(c2e.at(x)));
+    }
+
+    TGraphErrors *massScan = new TGraphErrors(N, arr, &m[0], zeroArr, &me[0]);
+    TGraphErrors *chiScan = new TGraphErrors(N, arr, &c2[0], zeroArr, &c2e[0]);
+
+    for(UInt_t x = 0; x < m.size(); x++){
+        cout << m.at(x) << "  " << c2.at(x) << endl;
+    }
+
+    TCanvas *can = new TCanvas("scan", "scan", 1300, 900);
+
+    can->Divide(1,2);
+    can->cd(1);
+    massScan->SetLineWidth(2);
+    massScan->SetMarkerStyle(21);
+    massScan->SetTitle("");
+    massScan->GetXaxis()->SetTitle("Fit range (#Deltat away from Nt/2)");
+    massScan->GetXaxis()->CenterTitle();
+    massScan->GetXaxis()->SetLabelSize(0.04);
+    massScan->GetXaxis()->SetTitleSize(0.05);
+    massScan->GetYaxis()->SetTitle("Mass");
+    massScan->GetYaxis()->CenterTitle();
+    massScan->GetYaxis()->SetLabelSize(0.04);
+    massScan->GetYaxis()->SetTitleSize(0.05);
+    chiScan->SetLineWidth(2);
+    chiScan->SetMarkerStyle(21);
+    chiScan->SetTitle("");
+    chiScan->GetXaxis()->SetTitle("Fit range (#Deltat away from Nt/2)");
+    chiScan->GetXaxis()->CenterTitle();
+    chiScan->GetXaxis()->SetLabelSize(0.04);
+    chiScan->GetXaxis()->SetTitleSize(0.05);
+    chiScan->GetYaxis()->SetTitle("#chi^{2}/d.o.f");
+    chiScan->GetYaxis()->CenterTitle();
+    chiScan->GetYaxis()->SetLabelSize(0.04);
+    chiScan->GetYaxis()->SetTitleSize(0.05);
+
+    massScan->Draw("ap");
+    can->cd(2);
+    chiScan->Draw("ap");
 
 }
 
@@ -367,7 +444,7 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
 
     vector<TF1*> massFit;
     if(mass != 0){
-        cout << mass << endl;
+        // cout << mass << endl;
         for(UInt_t x = 0; x < mass->size(); x++){
             massFit.push_back(new TF1(TString::Format("mass_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)), mass->at(x).at(2), mass->at(x).at(3)));
             massFit.push_back(new TF1(TString::Format("mass1_%s%i", name.Data(), x), TString::Format("%1.6f", mass->at(x).at(0)+mass->at(x).at(1)), mass->at(x).at(2), mass->at(x).at(3)));
@@ -432,13 +509,10 @@ void graph(vector<TGraphErrors*> graphs, vector<TString> massLabels, const TStri
     // can->Update();
 
     // TF1 *f1 = new TF1(name, "2.0*[1]*TMath::Exp(-16.*[0])*TMath::CosH((16.-x)*[0])", 4, 10);
-    // f1->SetParameter(0, 3);
-    // f1->SetParameter(1, 1e-3);
+    // f1->SetParameter(0, 0.7);
+    // f1->SetParameter(1, 1e-1);
     // f1->SetLineColor(kBlack);
-    // graphs.at(0)->Fit(f1, "ME", "", 4, 10);
-    // graphs.at(1)->Fit(f1, "ME", "", 4, 10);
-    // graphs.at(2)->Fit(f1, "ME", "", 4, 10);
-    // graphs.at(3)->Fit(f1, "ME", "", 4, 10);
+    // graphs.at(0)->Fit(f1, "ME", "", 5, 12);
     // cout << f1->GetParameter(0) << endl;
 
     can->SaveAs(name + ".png");

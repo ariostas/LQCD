@@ -48,3 +48,4 @@ __init__.py
 *.PS
 *.SP
 *.SS
+*.dat

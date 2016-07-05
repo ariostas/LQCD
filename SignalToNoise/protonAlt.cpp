@@ -32,7 +32,7 @@ using namespace TMath;
 using namespace std;
 
 // Declare functions
-vector<vector<vector<Double_t> > > readData(vector<TString>);
+vector<vector<vector<Double_t> > > readData(TString);
 vector<vector<Double_t> > average(vector<vector<vector<Double_t> > >);
 vector<vector<Double_t> > averageBoot(vector<vector<vector<Double_t> > >);
 vector<Double_t> average(vector<vector<Double_t> >);
@@ -45,50 +45,43 @@ vector<vector<Double_t> > findEffMassesBoot(vector<vector<vector<Double_t> > >, 
 vector<TGraphErrors*> makeGraphs(vector<vector<Double_t> >, vector<vector<Double_t> >, TString pos = "int");
 vector<vector<Double_t> > effMass(vector<vector<Double_t> >);
 vector<Double_t> effMass(vector<Double_t>);
-TMatrixD findSink(vector<vector<vector<Double_t> > >, TMatrixD, vector<TMatrixD>, Int_t);
+vector<TMatrixD> findSinks(vector<vector<vector<Double_t> > >, vector<TMatrixD>, vector<TMatrixD>);
 TMatrixD weightMatrix(vector<vector<Double_t> >);
 Double_t findMass(vector<vector<Double_t> >, Int_t, Int_t, Double_t, Double_t, Double_t *chi2 = 0);
 Double_t findMassBoot(vector<vector<Double_t> >, Int_t, Int_t, Double_t&, Double_t, Double_t, Double_t *chi2 = 0, Double_t *chi2err = 0);
 TMatrixD transpose(TMatrixD);
-vector<Double_t> findCorrFromVec(TMatrixD, TMatrixD, vector<TMatrixD>);
+vector<Double_t> findCorrFromVec(vector<TMatrixD>, vector<TMatrixD>, vector<TMatrixD>);
 vector<vector<Double_t> > findGndCorr(vector<vector<vector<Double_t> > >);
 vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > >, vector<vector<Double_t> >&);
-void findOptimalSN(vector<vector<vector<Double_t> > >, TMatrixD&, TMatrixD&, vector<TMatrixD>, Int_t);
+void findOptimalSN(vector<vector<vector<Double_t> > >, vector<TMatrixD>&, vector<TMatrixD>&, vector<TMatrixD>);
 void scanFitRange(vector<vector<Double_t> >);
 void graph(vector<TGraphErrors*>, vector<TString>, const TString, const TString, const TString, vector<vector<Double_t> > *mass = 0, TString flags = "");
 
 // Declare common objects
 TRandom3 *randGen = new TRandom3();
-Double_t intArr[500], halfIntArr[500], zeroArr[500];
-// vector<TString> corrTypes = {"P_1.P_1.PP", "DG2_1.P_1.SP", "DG4_1.P_1.SP", "P_1.DG2_1.PS", "DG2_1.DG2_1.SS", "DG4_1.DG2_1.SS",
-//                              "P_1.DG4_1.PS", "DG2_1.DG4_1.SS", "DG4_1.DG4_1.SS"};
+Double_t intArr[100], halfIntArr[100], zeroArr[100];
+vector<TString> corrTypes = {"P_1.P_1.PP", "DG2_1.P_1.SP", "DG4_1.P_1.SP", "P_1.DG2_1.PS", "DG2_1.DG2_1.SS", "DG4_1.DG2_1.SS",
+                             "P_1.DG4_1.PS", "DG2_1.DG4_1.SS", "DG4_1.DG4_1.SS"};
 
 // Main function
-void proton(){
+void protonAlt(){
 
     TH1::StatOverflows(kTRUE);
     
     cout << "\n\nStarting process...\n\n";
 
-    for(Int_t x = 0; x < 500; x++){
+    for(Int_t x = 0; x < 100; x++){
         intArr[x] = x; halfIntArr[x] = x+0.5; zeroArr[x] = 0;
     }
 
-    vector<TString> corrTypes;
-    for(Int_t x = 1; x <= 5; x++){
-         for(Int_t y = 1; y <= 5; y++){
-            corrTypes.push_back(TString::Format("proton_SrcDG%i_SnkDG%i_Interp4.dat", x, y));
-         }
-    }
-
-    vector<vector<vector<Double_t> > > correlators092 = readData(corrTypes);
+    vector<vector<vector<Double_t> > > correlators092 = readData("-4999");
 
     // vector<vector<Double_t> > gndcorr092 = findGndCorr(correlators092);
     // vector<vector<Double_t> > evalErrors092, evals092 = findEvalBoot(correlators092, evalErrors092);
 
     vector<vector<Double_t> > massErrors092, masses092 = findGndMasses(correlators092, massErrors092);
 
-    // cout << masses092.at(2).size() << "  " << masses092.at(2).at(0) << endl;
+    cout << masses092.at(2).size() << "  " << masses092.at(2).at(0) << endl;
 
     // vector<TGraphErrors*> graphs092 = makeGraphs(evals092, evalErrors092);
 
@@ -110,30 +103,30 @@ void proton(){
 }
 
 // Read correlator data from output of strip_hadspec
-vector<vector<vector<Double_t> > > readData(vector<TString> files){
+vector<vector<vector<Double_t> > > readData(TString mass){
+
+    cout << "Reading correlators with quark mass " << mass << "..." << endl;
 
     vector<vector<vector<Double_t> > > corrs;
 
-    for(UInt_t x = 0; x < files.size(); x++){
-        cout << "Reading file " << files.at(x) << "..." << endl;
+    for(UInt_t x = 0; x < corrTypes.size(); x++){
 
-        TString filename = "./PaperData/" + files.at(x);
+        TString filename = "./Data/proton.D" + mass + "." + corrTypes.at(x);
 
         ifstream ifs(filename); if(!ifs.is_open()){cout << "Error. File " << filename << " not found. Exiting...\n"; assert(0);}
 
         Int_t NConfigs = 0, Nt = 0, IsComplex = 0, Ns = 0, temp = 0;
-        Double_t temp2 = 0;
-        ifs >> NConfigs >> Nt >> IsComplex >> Ns >> temp >> temp2;
+        ifs >> NConfigs >> Nt >> IsComplex >> Ns >> temp;
 
         vector<vector<Double_t> > corr(NConfigs);
 
         if(NConfigs == 0){cout << "Error reading the file. Exiting..." << endl; assert(0);}
 
         Int_t deltaT = 0;
-        Double_t re = 0, im = 0, unkn = 0;
+        Double_t re = 0, im = 0;
     
         Int_t configCounter = -1;
-        while(ifs >> deltaT >> re >> im >> unkn){
+        while(ifs >> deltaT >> re >> im){
 
             if(deltaT == 0) configCounter++;
 
@@ -249,17 +242,15 @@ vector<vector<Double_t> > findEigenvalues(vector<TMatrixD> &mat, vector<vector<T
 
     vector<vector<Double_t> > eval(mat.at(0).GetNrows());
     TMatrixD init = mat.at(0);
-    TMatrixD init2 = mat.at(3);
     init.Invert();
     evec.clear();
     evec = vector<vector<TMatrixD> >(mat.size(),vector<TMatrixD>(0));
 
     for(UInt_t x = 0; x < mat.size(); x++){
         TMatrixD tempmat = init * mat.at(x);
-        TMatrixD tempmat2 = init2 * mat.at(x);
-        TVectorD tempeval, tempeval2;
-        tempmat.EigenVectors(tempeval);
-        const TMatrixD mvec = tempmat.EigenVectors(tempeval2);
+        mat.at(x) = init * mat.at(x);
+        TVectorD tempeval;
+        const TMatrixD mvec = tempmat.EigenVectors(tempeval);
         for(UInt_t y = 0; y < tempeval.GetNrows(); y++){
             eval.at(y).push_back(tempeval(y));
         }
@@ -328,7 +319,6 @@ vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > > corr,
     Double_t N = corr.at(0).size(), NB = 100;
     vector<vector<vector<Double_t> > > masses(NB);
     for(Int_t x = 0; x < NB; x++){
-        cout << x << endl;
         vector<vector<vector<Double_t> > > tempcorr(corr.size());
         for(Int_t z = 0; z < N; z++){
             Int_t num = randGen->Integer(N);
@@ -339,7 +329,7 @@ vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > > corr,
         vector<vector<Double_t> > tempAv = average(tempcorr);
 
         // First find the mass simply using smeared operators
-        masses.at(x).push_back(effMass(tempAv.at(6)));
+        masses.at(x).push_back(effMass(tempAv.at(4)));
 
         // Then find mass using the variational method
         vector<TMatrixD> tempmat = constructMatrices(tempAv);
@@ -347,30 +337,27 @@ vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > > corr,
         masses.at(x).push_back(effMass(findEigenvalues(tempmat, eigenvectors).at(0)));
 
         // Now find the mass using a S/N optimized sinks
-        Int_t ts = 20;
-        TMatrixD source = eigenvectors.at(0).at(ts);
-        source *= 1./Sqrt((transpose(source) * source)(0,0));
-        TMatrixD sink = findSink(tempcorr, source, tempmat, ts);
-        vector<Double_t> tempcorr2 = findCorrFromVec(source, sink, tempmat);
-        // for(UInt_t a = 0; a < tempcorr2.size(); a++){
-        // 	cout << tempcorr2.at(a) << endl;
-        // }
-        // cout << endl;
-        // cout << (transpose(source) * source)(0,0) << "  " << (transpose(sink) * sink)(0,0) << "  " << (transpose(sink) * source)(0,0) << endl;
+        for(UInt_t y = 0; y < eigenvectors.at(0).size(); y++){
+            eigenvectors.at(0).at(y) *= 1./Sqrt((transpose(eigenvectors.at(0).at(y)) * eigenvectors.at(0).at(y))(0,0));
+        }
+        vector<TMatrixD> sinks = findSinks(tempcorr, eigenvectors.at(0), tempmat);
+        vector<Double_t> tempcorr2 = findCorrFromVec(eigenvectors.at(0), sinks, tempmat);
+        for(UInt_t a = 0; a < tempcorr2.size(); a++){
+        	cout << tempcorr2.at(a) << endl;
+        }
+        cout << endl;
         masses.at(x).push_back(effMass(tempcorr2));
 
         // Finally, find the mass using S/N optimized sources and sinks
-        // TMatrixD start = source;
-        TMatrixD start(5,1); start(1,0) = 1;
-        TMatrixD sourceSN = start, sinkSN = start;
-        findOptimalSN(tempcorr, sourceSN, sinkSN, tempmat, ts);
-        vector<Double_t> tempcorr3 = findCorrFromVec(sourceSN, sinkSN, tempmat);
+        vector<TMatrixD> sourcesSN = eigenvectors.at(0), sinksSN = sinks;
+        findOptimalSN(tempcorr, sourcesSN, sinksSN, tempmat);
+        vector<Double_t> tempcorr3 = findCorrFromVec(sourcesSN, sinksSN, tempmat);
         masses.at(x).push_back(effMass(tempcorr3));
 
-        cout << (transpose(sourceSN) * start)(0,0) << "  " << (transpose(sinkSN) * start)(0,0) << "  " << (transpose(sinkSN) * sourceSN)(0,0) << endl;
 
         // Delete everything
         eigenvectors.clear();
+        sinks.clear();
         tempcorr.clear();
         tempcorr2.clear();
         tempcorr3.clear();
@@ -381,24 +368,20 @@ vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > > corr,
     vector<vector<Double_t> > av(masses.at(0).size(),vector<Double_t>(masses.at(0).at(0).size()));
     for(UInt_t x = 0; x < masses.at(0).size(); x++){
         for(UInt_t y = 0; y < masses.at(0).at(0).size(); y++){
-            Double_t bad = 0;
             for(UInt_t z = 0; z < NB; z++){
-                if(masses.at(z).at(x).at(y) != masses.at(z).at(x).at(y)) bad++;
-                else av.at(x).at(y) += masses.at(z).at(x).at(y);
+                av.at(x).at(y) += masses.at(z).at(x).at(y);
             }
-            av.at(x).at(y) /= (NB-bad);
+            av.at(x).at(y) /= NB;
         }
     }
 
     vector<vector<Double_t> > error(masses.at(0).size(),vector<Double_t>(masses.at(0).at(0).size()));
     for(UInt_t x = 0; x < masses.at(0).size(); x++){
         for(UInt_t y = 0; y < masses.at(0).at(0).size(); y++){
-            Double_t bad = 0;
             for(UInt_t z = 0; z < NB; z++){
-                if(masses.at(z).at(x).at(y) != masses.at(z).at(x).at(y)) bad++;
-                else error.at(x).at(y) += (masses.at(z).at(x).at(y)-av.at(x).at(y))*(masses.at(z).at(x).at(y)-av.at(x).at(y));
+                error.at(x).at(y) += (masses.at(z).at(x).at(y)-av.at(x).at(y))*(masses.at(z).at(x).at(y)-av.at(x).at(y));
             }
-            error.at(x).at(y) = Sqrt(1./(NB-bad)*error.at(x).at(y));
+            error.at(x).at(y) = Sqrt(1./NB*error.at(x).at(y));
         }
     }
     err = error;
@@ -416,78 +399,75 @@ vector<Double_t> effMass(vector<Double_t> corr){
     return masses;
 }
 
-TMatrixD findSink(vector<vector<vector<Double_t> > > corr, TMatrixD evec, vector<TMatrixD> C, Int_t ts){
+vector<TMatrixD> findSinks(vector<vector<vector<Double_t> > > corr, vector<TMatrixD> evec, vector<TMatrixD> C){
 
-	Int_t matSize = evec.GetNrows();
-	TMatrixD sink(matSize, 1);
+	vector<TMatrixD> sinks;
+	Int_t matSize = evec.at(0).GetNrows();
 
-	TMatrixD sigma2(matSize, matSize);
-	for(UInt_t x = 0; x < corr.at(0).size(); x++){
-
-		TMatrixD curlyC(matSize, matSize);
-		for(UInt_t y = 0; y < corr.size(); y++){
-			curlyC(y%matSize,y/matSize) = corr.at(y).at(x).at(ts);
-		}
-
-		sigma2 = sigma2 + (curlyC * evec * transpose(evec) * transpose(curlyC));
-
-	}
-
-	sigma2 *= 1./Double_t(corr.at(0).size());
-	sigma2 *= 1e35;
-	sigma2.Invert();
-	sigma2 *= 1e35;
-
-	Double_t A = (transpose(evec) * transpose(C.at(ts)) * sigma2 * sigma2 * C.at(ts) * evec)(0,0);
-	A = 1./Sqrt(Abs(A));
-
-	sink = A * sigma2 * C.at(ts) * evec;
-
-	return sink;
-
-}
-
-void findOptimalSN(vector<vector<vector<Double_t> > > corr, TMatrixD &source, TMatrixD &sink, vector<TMatrixD> C, Int_t ts){
-
-	Int_t matSize = source.GetNrows();
-
-	for(Int_t iteration = 0; iteration < 50; iteration++){
-		TMatrixD sigma2source(matSize, matSize), sigma2sink(matSize, matSize);
+	vector<TMatrixD> sigma2(evec.size(), TMatrixD(matSize, matSize));
+	for(UInt_t t = 0; t < evec.size(); t++){
 		for(UInt_t x = 0; x < corr.at(0).size(); x++){
 
 			TMatrixD curlyC(matSize, matSize);
 			for(UInt_t y = 0; y < corr.size(); y++){
-				curlyC(y%matSize,y/matSize) = corr.at(y).at(x).at(ts);
+				curlyC(y%matSize,y/matSize) = corr.at(y).at(x).at(t);
 			}
 
-			sigma2source = sigma2source + (curlyC * source * transpose(source) * transpose(curlyC));
-			sigma2sink = sigma2sink + (transpose(curlyC) * sink * transpose(sink) * curlyC);
+			sigma2.at(t) = sigma2.at(t) + (curlyC * evec.at(t) * transpose(evec.at(t)) * transpose(curlyC));
 
 		}
 
-		sigma2source *= 1./Double_t(corr.at(0).size());
-		sigma2sink *= 1./Double_t(corr.at(0).size());
-		sigma2source *= 1e35;
-		sigma2sink *= 1e35;
-		sigma2source.Invert();
-		sigma2sink.Invert();
-		sigma2source *= 1e35;
-		sigma2sink *= 1e35;
+		sigma2.at(t) *= 1./Double_t(corr.at(0).size());
+		sigma2.at(t) *= 1e35;
+		sigma2.at(t).Invert();
+		sigma2.at(t) *= 1e35;
 
-		Double_t Asources = (transpose(source) * transpose(C.at(ts)) * sigma2source * sigma2source * C.at(ts) * source)(0,0);
-		Double_t Asinks = (transpose(sink) * C.at(ts) * sigma2sink * sigma2sink * transpose(C.at(ts)) * sink)(0,0);
-		Asources = 1./Sqrt(Abs(Asources));
-		Asinks = 1./Sqrt(Abs(Asinks));
+		Double_t A = (transpose(evec.at(0)) * transpose(C.at(t)) * sigma2.at(t) * sigma2.at(t) * C.at(t) * evec.at(t))(0,0);
+		A = 1./Sqrt(Abs(A));
 
-		TMatrixD oldsource = source, oldsink = sink;
+		sinks.push_back(A * sigma2.at(t) * C.at(t) * evec.at(t));
+	}
 
-		source = Asinks * sigma2sink * transpose(C.at(ts)) * oldsink;
-		sink = Asources * sigma2source * C.at(ts) * oldsource;
+	return sinks;
 
-        source *= 1./Sqrt((transpose(source) * source)(0,0));
-        sink *= 1./Sqrt((transpose(sink) * sink)(0,0));
+}
 
-		cout << iteration << "  " << (transpose(oldsource) * source)(0,0) << "  " << (transpose(oldsink) * sink)(0,0) << endl;
+void findOptimalSN(vector<vector<vector<Double_t> > > corr, vector<TMatrixD> &sources, vector<TMatrixD> &sinks, vector<TMatrixD> C){
+
+	Int_t matSize = sources.at(0).GetNrows();
+
+	for(Int_t iteration = 0; iteration < 50; iteration++){
+		vector<TMatrixD> sigma2sources(sources.size(), TMatrixD(matSize, matSize)), sigma2sinks(sinks.size(), TMatrixD(matSize, matSize));
+		for(UInt_t t = 0; t < sources.size(); t++){
+			for(UInt_t x = 0; x < corr.at(0).size(); x++){
+
+				TMatrixD curlyC(matSize, matSize);
+				for(UInt_t y = 0; y < corr.size(); y++){
+					curlyC(y%matSize,y/matSize) = corr.at(y).at(x).at(t);
+				}
+
+				sigma2sources.at(t) = sigma2sources.at(t) + (curlyC * sources.at(t) * transpose(sources.at(t)) * transpose(curlyC));
+				sigma2sinks.at(t) = sigma2sinks.at(t) + (curlyC * sinks.at(t) * transpose(sinks.at(t)) * transpose(curlyC));
+
+			}
+
+			sigma2sources.at(t) *= 1./Double_t(corr.at(0).size());
+			sigma2sinks.at(t) *= 1./Double_t(corr.at(0).size());
+			sigma2sources.at(t) *= 1e35;
+			sigma2sinks.at(t) *= 1e35;
+			sigma2sources.at(t).Invert();
+			sigma2sinks.at(t).Invert();
+			sigma2sources.at(t) *= 1e35;
+			sigma2sinks.at(t) *= 1e35;
+
+			Double_t Asources = (transpose(sources.at(0)) * transpose(C.at(t)) * sigma2sources.at(t) * sigma2sources.at(t) * C.at(t) * sources.at(t))(0,0);
+			Double_t Asinks = (transpose(sinks.at(0)) * transpose(C.at(t)) * sigma2sinks.at(t) * sigma2sinks.at(t) * C.at(t) * sinks.at(t))(0,0);
+			Asources = 1./Sqrt(Abs(Asources));
+			Asinks = 1./Sqrt(Abs(Asinks));
+
+			sources.at(t) = Asinks * sigma2sinks.at(t) * C.at(t) * sinks.at(t);
+			sinks.at(t) = Asources * sigma2sources.at(t) * C.at(t) * sources.at(t);
+		}
 	}
 }
 
@@ -501,12 +481,12 @@ TMatrixD transpose(TMatrixD mat){
 	return tr;
 }
 
-vector<Double_t> findCorrFromVec(TMatrixD source, TMatrixD sink, vector<TMatrixD> C){
+vector<Double_t> findCorrFromVec(vector<TMatrixD> sources, vector<TMatrixD> sinks, vector<TMatrixD> C){
 
 	vector<Double_t> corr;
 
-	for(UInt_t x = 0; x < C.size(); x++){
-		corr.push_back((transpose(sink) * C.at(x) * source)(0,0));
+	for(UInt_t x = 0; x < sources.size(); x++){
+		corr.push_back((transpose(sinks.at(x)) * C.at(x) * sources.at(x))(0,0));
 	}
 	return corr;
 

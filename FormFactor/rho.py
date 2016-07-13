@@ -1,0 +1,369 @@
+import numpy as np
+import math
+import cmath
+import random
+import matplotlib.pyplot as plt
+
+file_prefix = '/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/strippedData/'
+threeptfn_file = '{0}_cur3ptfn_{1}_i{2}_g{3}_qx{4}_qy{5}_qz{6}_pfx{7}_pfy{8}_pfz{9}.{10}.{11}.SS'
+twoptfn_0_file = '{0}.D{1}.{2}.{3}.SS'
+twoptfn_other_file = '{0}_px{1}_py{2}_pz{3}.D{4}.{5}.{6}.SS'
+
+
+def read_file(data_type='2ptfn', m=-2450, sources=['DG1_1'], sinks=['DG1_1'], pf=(0,0,0), q=(1,0,0), g=1, i=0, seqsource='a0-rho_x_1', t_sink=20, current='nonlocal', had='rho'):
+    n_sources = len(sources)
+    n_sinks = len(sinks)
+    data = np.zeros((1, n_sources*n_sinks, 1), dtype=np.complex128)
+    for x in range(n_sources):
+        for y in range(n_sinks):
+            if(x*n_sinks + y < n_sources*n_sinks-1):
+                print('Reading data... ' + str(math.floor((x*n_sinks + y)/(n_sources*n_sinks-1)*100)) + '%', end='\r')
+            else:
+                print('Reading data... \033[1;32mdone\033[0m')
+            filename = ''
+            if(data_type='2ptfn' and pf=(0,0,0)):
+                filename = file_prefix+twoptfn_0_file.format(had, m, sources[x], sinks[y])
+            elif(data_type='2ptfn'):
+                filename = file_prefix+twoptfn_other_file.format(had, pf[0], pf[1], pf[2], m, sources[x], sinks[y])
+            elif(data_type='3ptfn'):
+                filename = file_prefix+threeptfn_file.format(current, seqsource, i, g, q[0], q[1], q[2], pf[0], pf[1], pf[2], sources[x], sinks[y])
+            else:
+                print('Error: unknown data type')
+            f = open(filename, 'r')
+            counter = -1
+            n_configs = 0
+            t_size = 0
+            for line in f:
+                line = line.strip()
+                col = line.split()
+                if(counter == -1):
+                    n_configs = int(col[0])
+                    t_size = int(col[1])
+                    if(x == 0 and y == 0):
+                        data = np.zeros((n_configs, n_files , t_size), dtype=np.complex128)
+                else:
+                    data[math.floor(counter/t_size), x*n_sinks + y, counter%t_size] = float(col[1]) + float(col[2])*1.0j
+                counter += 1
+            if(counter != n_configs*t_size):
+                print('Error: File seems to be corrupted')
+    return data
+
+
+def average(corr):
+    n_configs = len(corr)
+    av = corr[0]
+    for x in range(1, n_configs):
+        av += corr[x]
+    av /= float(n_configs)
+    return av
+
+
+def eff_masses(corr):
+    t_size = corr.size
+    masses = np.zeros(t_size)
+    for x in range(0, t_size):
+        r = corr[x].real/corr[(x+1)%t_size].real
+        m = 0
+        if(r > 0.):
+            m = math.log(r)
+        if(x > t_size/2):
+            m = -m
+        masses[x] = m
+    return masses
+
+
+def construct_matrices(corr):
+    n_configs, n_types, t_size = corr.shape
+    mat_size = math.sqrt(n_types)
+    if(mat_size%1 != 0):
+        print("Matrix size error")
+    matrices = [[np.matrix(np.zeros((mat_size, mat_size), dtype=np.complex128)) for n in range(t_size)] for m in range(n_configs)]
+    matrices = np.array(matrices)
+    for x in range(n_configs):
+        if(x < n_configs-1):
+            print('Constructing matrices... ' + str(math.floor(x/n_configs*100)) + '%', end='\r')
+        else:
+            print('Constructing matrices... \033[1;32mdone\033[0m')
+        for y in range(t_size):
+            temp_arr = np.zeros((mat_size, mat_size), dtype=np.complex128)
+            for z in range(n_types):
+                temp_arr[math.floor(z/mat_size), z%mat_size] = corr[x, z, y]
+            matrices[x,y] = np.matrix(temp_arr)
+    return matrices
+
+def make_hermitian(mat):
+    n_configs, t_size, mat_size, temp = mat.shape
+    temp_mat = mat
+    for x in range(n_configs):
+        if(x < n_configs-1):
+            print('Making matrices hermitian... ' + str(math.floor(x/n_configs*100)) + '%', end='\r')
+        else:
+            print('Making matrices hermitian... \033[1;32mdone\033[0m')
+        for y in range(t_size):
+            for n in range(mat_size):
+                for m in range(mat_size):
+                    if(n == m):
+                        temp_mat[x,y][n,m] = mat[x,y][n,m].real
+                    elif(n > m):
+                        re = (mat[x,y][n,m].real + mat[x,y][m,n].real)/2.0
+                        im = (mat[x,y][n,m].imag - mat[x,y][m,n].imag)/2.0
+                        temp_mat[x,y][n,m] = re + im*1.0j
+                        temp_mat[x,y][m,n] = re - im*1.0j
+    return temp_mat
+
+
+def find_eigsys(mat):
+    t_size, mat_size, temp = mat.shape
+    evals = np.zeros((mat_size, t_size), dtype=np.complex128)
+    evecs = [[np.matrix(np.zeros((mat_size, 1)), dtype=np.complex128) for n in range(t_size)] for m in range(mat_size)]
+    evecs = np.array(evecs)
+    init = np.matrix(mat[0])
+    init2 = np.matrix(mat[0])
+    init = np.linalg.inv(init)
+    init2 = np.linalg.inv(init2)
+    for x in range(t_size):
+        temp_evals, temp_evecs = np.linalg.eig(init * np.matrix(mat[x]))
+        temp_evals2, temp_evecs2 = np.linalg.eig(init2 * np.matrix(mat[x]))
+        order = np.argsort(temp_evals)
+        order2 = np.argsort(temp_evals2)
+        for y in range(mat_size):
+            evals[y, x] = temp_evals[order[mat_size-1-y]]
+            evecs[y, x] = temp_evecs2[:,order2[mat_size-1-y]]
+    return evals, evecs
+
+
+def find_sink(source, mat, ts):
+    n_configs, t_size, mat_size, temp = mat.shape
+    av_mat = average(mat)
+    sink = np.matrix(np.zeros((mat_size, 1), dtype=np.complex128))
+    sigma2 = np.matrix(np.zeros((mat_size, mat_size), dtype=np.complex128))
+    for x in range(n_configs):
+        sigma2 += np.matrix(mat[x, ts]) * np.matrix(source) * np.matrix(source).H * np.matrix(mat[x, ts]).H
+    sigma2 /= n_configs
+    inv_sigma2 = np.linalg.inv(sigma2)
+    a = (np.matrix(source).H * np.matrix(av_mat[ts]).H * inv_sigma2 * inv_sigma2 * np.matrix(av_mat[ts]) * np.matrix(source))[0,0]
+    a = 1.0/cmath.sqrt(a)
+    sink = a * inv_sigma2 * np.matrix(av_mat[ts]) * np.matrix(source)
+    sink /= cmath.sqrt((sink.H * sink)[0,0])
+    return sink
+
+
+def find_opt_sn(source_g, sink_g, mat, ts):
+    n_configs, t_size, mat_size, temp = mat.shape
+    av_mat = average(mat)
+    n_iter = 20
+    source = np.matrix(source_g)
+    sink = np.matrix(sink_g)
+    for n in range(n_iter):
+        sigma2_source = np.matrix(np.zeros((mat_size, mat_size), dtype=np.complex128))
+        sigma2_sink = np.matrix(np.zeros((mat_size, mat_size), dtype=np.complex128))
+        for x in range(n_configs):
+            sigma2_source += np.matrix(mat[x, ts]) * source * source.H * np.matrix(mat[x, ts]).H
+            sigma2_sink += np.matrix(mat[x, ts]).H * sink * sink.H * np.matrix(mat[x, ts])
+        sigma2_source /= float(n_configs)
+        sigma2_sink /= float(n_configs)
+        inv_sigma2_source = np.linalg.inv(sigma2_source)
+        inv_sigma2_sink = np.linalg.inv(sigma2_sink)
+        a_source = (source.H * np.matrix(av_mat[ts]).H * inv_sigma2_source * inv_sigma2_source * np.matrix(av_mat[ts]) * source)[0,0]
+        a_sink = (sink.H * np.matrix(av_mat[ts]) * inv_sigma2_sink * inv_sigma2_sink * np.matrix(av_mat[ts]).H * sink)[0,0]
+        a_source = 1.0/cmath.sqrt(a_source)
+        a_sink = 1.0/cmath.sqrt(a_sink)
+        old_source = source
+        old_sink = sink
+        source = a_sink * inv_sigma2_sink * np.matrix(av_mat[ts]).H * old_sink
+        sink = a_source * inv_sigma2_source * np.matrix(av_mat[ts]) * old_source
+        source /= cmath.sqrt((source.H * source)[0,0])
+        sink /= cmath.sqrt((sink.H * sink)[0,0])
+        # print('Iter '+str(n)+' '+ str((old_source.H * source)[0,0])+' '+str((old_sink.H * sink)[0,0])+' '+str((source.H * sink)[0,0]))
+    return source, sink
+
+
+def compute_corr(source, sink, mat):
+    t_size = len(mat)
+    corr = np.zeros(t_size, dtype=np.complex128)
+    for x in range(t_size):
+        corr[x] = (np.matrix(sink).H * np.matrix(mat[x]) * np.matrix(source))[0,0]
+    return corr
+
+
+def find_gnd_masses(corr, mat):
+    n_configs, n_types, t_size = corr.shape
+    n_configs, t_size, mat_size, temp = mat.shape
+    n_boot = 50
+    masses = np.zeros((n_boot, 4, t_size))
+    for x in range(0, n_boot):
+        if(x < n_boot-1):
+            print('Performing bootstrap... ' + str(math.floor(x/n_boot*100)) + '%', end='\r')
+        else:
+            print('Performing bootstrap... \033[1;32mdone\033[0m')
+        temp_corr = np.zeros((n_configs, n_types, t_size), dtype=np.complex128)
+        temp_mat = np.zeros((n_configs, t_size, mat_size, mat_size), dtype=np.complex128)
+        for y in range(0, n_configs):
+            r = random.randrange(0, n_configs)
+            temp_corr[y] = corr[r]
+            temp_mat[y] = mat[r]
+        av_corr = average(temp_corr)
+        masses[x, 0] = eff_masses(av_corr[6])
+        av_mat = average(temp_mat)
+        temp_evals, temp_evecs = find_eigsys(av_mat)
+        masses[x, 1] = eff_masses(temp_evals[0])
+        ts = 20
+        source = temp_evecs[0, ts]
+        source *= 1.0/cmath.sqrt((np.matrix(source).H * np.matrix(source))[0,0])
+        sink = find_sink(source, temp_mat, ts)
+        temp_corr2 = compute_corr(source, sink, av_mat)
+        masses[x, 2] = eff_masses(temp_corr2)
+        guess = np.matrix([[0],[1],[0],[0],[0]])
+        source_sn, sink_sn = find_opt_sn(guess, guess, temp_mat, ts)
+        # print(str((source_sn.H * guess)[0,0])+' '+str((sink_sn.H * guess)[0,0]))
+        temp_corr3 = compute_corr(source_sn, source_sn, av_mat)
+        masses[x, 3] = eff_masses(temp_corr3)
+    av_masses = np.zeros((4, t_size))
+    for x in range(0, n_boot):
+        av_masses += masses[x]
+    av_masses /= float(n_boot)
+    err_masses = np.zeros((4, t_size))
+    for x in range(0, n_boot):
+        err_masses += (masses[x]-av_masses)**2
+    err_masses = (1./float(n_boot)*err_masses)**(1/2)
+    return av_masses, err_masses
+
+
+def compute_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink):
+    ff = np.zeros(t_sink+1)
+    for tau in range(t_sink+1):
+        r = twoptfn_snk[t_sink]/twoptfn_src[t_sink]
+        r *= twoptfn_snk[tau]/twoptfn_src[tau]
+        r *= twoptfn_src[t_sink-tau]/twoptfn_snk[t_sink-tau]
+        r = math.sqrt(r)
+        r *= threeptfn[tau]/twoptfn_snk[t_sink]
+        ff[tau] = r
+    return ff
+
+
+def find_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink):
+    n_configs, t_size, mat_size, temp = threeptfn.shape
+    n_boot = 50
+    all_ff = np.zeros((n_boot, 4, t_sink+1))
+    for x in range(0, n_boot):
+        if(x < n_boot-1):
+            print('Performing form factor bootstrap... ' + str(math.floor(x/(n_boot-1)*100)) + '%', end='\r')
+        else:
+            print('Performing form factor bootstrap... \033[1;32mdone\033[0m')
+        temp_mat = np.zeros((n_configs, t_size, mat_size, mat_size), dtype=np.complex128)
+        for y in range(0, n_configs):
+            r = random.randrange(0, n_configs)
+            temp_3ptfn[y] = threeptfn[r]
+            temp_2ptfn_src[y] = twoptfn_src[r]
+            temp_2ptfn_snk[y] = twoptfn_snk[r]
+        av_3ptfn = average(temp_3ptfn)
+        av_2ptfn_src = average(temp_2ptfn_src)
+        av_2ptfn_snk = average(temp_2ptfn_snk)
+        ##############################
+        #### Smeared src and snk #####
+        ##############################
+        smeared_src = np.matrix([0],[1],[0])
+        smeared_3ptfn_corr = compute_corr(smeared_src, smeared_src, av_3ptfn)
+        smeared_2ptfn_src_corr = compute_corr(smeared_src, smeared_src, av_2ptfn_src)
+        smeared_2ptfn_snk_corr = compute_corr(smeared_src, smeared_src, av_2ptfn_snk)
+        all_ff[x, 0] = compute_ff(smeared_3ptfn_corr, smeared_2ptfn_src_corr, smeared_2ptfn_snk_corr, t_sink)
+        ##############################
+        ## Variational src and snk ###
+        ##############################
+        ts = 10
+        temp_evals, temp_evecs = find_eigsys(av_2ptfn_snk)
+        var_src = temp_evecs[0, ts]
+        var_src *= 1.0/cmath.sqrt((np.matrix(var_src).H * np.matrix(var_src))[0,0])
+        var_3ptfn_corr = compute_corr(var_src, var_src, av_3ptfn)
+        var_2ptfn_src_corr = compute_corr(var_src, var_src, av_2ptfn_src)
+        var_2ptfn_snk_corr = compute_corr(var_src, var_src, av_2ptfn_snk)
+        all_ff[x, 1] = compute_ff(var_3ptfn_corr, var_2ptfn_src_corr, var_2ptfn_snk_corr, t_sink)
+        ##############################
+        #### Var src and S/N snk #####
+        ##############################
+        varsn_sink = find_sink(var_source, temp_2ptfn_snk, ts)
+        varsn_3ptfn_corr = compute_corr(var_src, varsn_snk, av_3ptfn)
+        varsn_2ptfn_src_corr = compute_corr(var_src, varsn_snk, av_2ptfn_src)
+        varsn_2ptfn_snk_corr = compute_corr(var_src, varsn_snk, av_2ptfn_snk)
+        all_ff[x, 2] = compute_ff(varsn_3ptfn_corr, varsn_2ptfn_src_corr, varsn_2ptfn_snk_corr, t_sink)
+        ##############################
+        ###### S/N src and snk #######
+        ##############################
+        guess = var_src
+        sn_src, sn_snk = find_opt_sn(guess, guess, temp_2ptfn_snk, ts)
+        sn_3ptfn_corr = compute_corr(sn_src, sn_snk, av_3ptfn)
+        sn_2ptfn_src_corr = compute_corr(sn_src, sn_snk, av_2ptfn_src)
+        sn_2ptfn_snk_corr = compute_corr(sn_src, sn_snk, av_2ptfn_snk)
+        all_ff[x, 3] = compute_ff(sn_3ptfn_corr, sn_2ptfn_src_corr, sn_2ptfn_snk_corr, t_sink)
+    av_ff = np.zeros((4, t_snk+1))
+    for x in range(0, n_boot):
+        av_ff += all_ff[x]
+    av_ff /= float(n_boot)
+    err_ff = np.zeros((4, t_sink+1))
+    for x in range(0, n_boot):
+        err_ff += (all_ff[x]-av_ff)**2
+    err_ff = (1./float(n_boot)*err_ff)**(1/2)
+    return av_ff, err_ff
+
+
+random.seed()
+
+sources = ['DG1_1', 'DG2_1', 'DG3_1']
+sinks = ['DG1_1', 'DG2_1', 'DG3_1']
+
+rho_3ptfn_x_corr = read_file(data_type='3ptft', g=1, i=1, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0) current='nonlocal')
+rho_3ptfn_y_corr = read_file(data_type='3ptft', g=1, i=2, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0) current='nonlocal')
+rho_3ptfn_z_corr = read_file(data_type='3ptft', g=1, i=4, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0) current='nonlocal')
+rho_3ptfn_t_corr = read_file(data_type='3ptft', g=1, i=8, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0) current='nonlocal')
+rho_2ptfn_srcp_corr = read_file(data_type='2ptfn', had='rho', pf=(-1,0,0), sources=sources, sinks=sinks)
+rho_2ptfn_snkp_corr = read_file(data_type='2ptfn', had='rho', pf=(0,0,0), sources=sources, sinks=sinks)
+
+rho_3ptfn_x_mat = construct_matrices(rho_3ptfn_x_corr)
+rho_3ptfn_y_mat = construct_matrices(rho_3ptfn_y_corr)
+rho_3ptfn_z_mat = construct_matrices(rho_3ptfn_z_corr)
+rho_3ptfn_t_mat = construct_matrices(rho_3ptfn_t_corr)
+rho_2ptfn_srcp_mat = construct_matrices(rho_2ptfn_srcp_corr)
+rho_2ptfn_snkp_mat = construct_matrices(rho_2ptfn_snkp_corr)
+
+rho_3ptfn_x_mat = make_hermitian(rho_3ptfn_x_mat)
+rho_3ptfn_y_mat = make_hermitian(rho_3ptfn_y_mat)
+rho_3ptfn_z_mat = make_hermitian(rho_3ptfn_z_mat)
+rho_3ptfn_t_mat = make_hermitian(rho_3ptfn_t_mat)
+rho_2ptfn_srcp_mat = make_hermitian(rho_2ptfn_srcp_mat)
+rho_2ptfn_snkp_mat = make_hermitian(rho_2ptfn_snkp_mat)
+
+rho_ff_x, rho_fferr_x = find_ff(rho_3ptfn_x_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, 20)
+rho_ff_y, rho_fferr_y = find_ff(rho_3ptfn_y_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, 20)
+rho_ff_z, rho_fferr_z = find_ff(rho_3ptfn_z_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, 20)
+rho_ff_t, rho_fferr_t = find_ff(rho_3ptfn_t_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, 20)
+rho_mass, rho_masserr = find_gnd_masses(rho_2ptfn_snkp_corr, rho_2ptfn_snkp_mat)
+
+rho_ff = [rho_ff_x, rho_ff_y, rho_ff_z, rho_ff_t]
+rho_fferr = [rho_fferr_x, rho_fferr_y, rho_fferr_z, rho_fferr_t]
+labels = ['x', 'y', 'z', 't']
+xlab = np.arange(0, 24, 1)
+
+plt.figure(1, figsize=(8, 8))
+for x in range(4):
+    plt.subplot(411+x)
+    plt.errorbar(xlab, rho_ff[x][0], yerr=rho_fferr[x][0], color='b', ecolor='b', fmt='^', capsize=2, label='Smeared')
+    plt.errorbar(xlab, rho_ff[x][1], yerr=rho_fferr[x][1], color='r', ecolor='r', fmt='v', capsize=2, label='Variational')
+    plt.errorbar(xlab, rho_ff[x][2], yerr=rho_fferr[x][2], color='g', ecolor='g', fmt='o', capsize=2, label='Variational source + S/N sink')
+    plt.errorbar(xlab, rho_ff[x][3], yerr=rho_fferr[x][3], color='k', ecolor='k', fmt='s', capsize=2, label='S/N source and sink')
+    plt.ylabel('$R(\\tau,t)$  {0} current'.format(labels[x]), fontsize=16)
+    plt.xlabel('$ \\tau $', fontsize=16)
+    plt.xlim(-0.5, 23.5)
+    if(x == 0):
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=4, mode='expand', borderaxespad=0.)
+
+plt.figure(2, figsize=(8,8))
+plt.errorbar(xlab, np.resize(rho_mass[0] 24), yerr=np.resize(rho_masserr[0], 24), color='b', ecolor='b', fmt='^', capsize=2, label='Smeared')
+plt.errorbar(xlab, np.resize(rho_mass[1] 24), yerr=np.resize(rho_masserr[1], 24), color='r', ecolor='r', fmt='v', capsize=2, label='Variational')
+plt.errorbar(xlab, np.resize(rho_mass[2] 24), yerr=np.resize(rho_masserr[2], 24), color='g', ecolor='g', fmt='o', capsize=2, label='Variational source + S/N sink')
+plt.errorbar(xlab, np.resize(rho_mass[3] 24), yerr=np.resize(rho_masserr[3], 24), color='k', ecolor='k', fmt='s', capsize=2, label='S/N source and sink')
+plt.ylabel('$m_{eff}$', fontsize=16)
+plt.xlabel('$ \Delta t $', fontsize=16)
+plt.xlim(-0.5, 23.5)
+plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=4, mode='expand', borderaxespad=0.)
+
+plt.show()

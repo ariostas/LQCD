@@ -328,13 +328,13 @@ for x in range(n_sources):
                 '        <object_id>sh_{0}_sh_{1}_seqprop</object_id>\n'.format(x,y)+
                 '      </NamedObject>\n'+
                 '    </elem>\n\n')
-        f.write('   <elem>\n'+
-                '      <Name>ERASE_NAMED_OBJECT</Name>\n'+
-                '      <Frequency>1</Frequency>\n'+
-                '      <NamedObject>\n'+
-                '        <object_id>sh_{0}_prop</object_id>\n'.format(x)+
-                '      </NamedObject>\n'+
-                '    </elem>\n\n')
+    f.write('   <elem>\n'+
+            '      <Name>ERASE_NAMED_OBJECT</Name>\n'+
+            '      <Frequency>1</Frequency>\n'+
+            '      <NamedObject>\n'+
+            '        <object_id>sh_{0}_prop</object_id>\n'.format(x)+
+            '      </NamedObject>\n'+
+            '    </elem>\n\n')
 
 f.write(
         '  </InlineMeasurements>\n'+

@@ -323,14 +323,6 @@ Calculate bar3ptfn - insertions in 3-pt functions
       </NamedObject>
     </elem>
 
-   <elem>
-      <Name>ERASE_NAMED_OBJECT</Name>
-      <Frequency>1</Frequency>
-      <NamedObject>
-        <object_id>sh_0_prop</object_id>
-      </NamedObject>
-    </elem>
-
     <elem>
       <Name>SINK_SMEAR</Name>
       <Frequency>1</Frequency>
@@ -538,14 +530,6 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <NamedObject>
         <object_id>sh_0_sh_1_seqprop</object_id>
-      </NamedObject>
-    </elem>
-
-   <elem>
-      <Name>ERASE_NAMED_OBJECT</Name>
-      <Frequency>1</Frequency>
-      <NamedObject>
-        <object_id>sh_0_prop</object_id>
       </NamedObject>
     </elem>
 
@@ -1084,14 +1068,6 @@ Calculate bar3ptfn - insertions in 3-pt functions
       </NamedObject>
     </elem>
 
-   <elem>
-      <Name>ERASE_NAMED_OBJECT</Name>
-      <Frequency>1</Frequency>
-      <NamedObject>
-        <object_id>sh_1_prop</object_id>
-      </NamedObject>
-    </elem>
-
     <elem>
       <Name>SINK_SMEAR</Name>
       <Frequency>1</Frequency>
@@ -1299,14 +1275,6 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <NamedObject>
         <object_id>sh_1_sh_1_seqprop</object_id>
-      </NamedObject>
-    </elem>
-
-   <elem>
-      <Name>ERASE_NAMED_OBJECT</Name>
-      <Frequency>1</Frequency>
-      <NamedObject>
-        <object_id>sh_1_prop</object_id>
       </NamedObject>
     </elem>
 
@@ -1845,14 +1813,6 @@ Calculate bar3ptfn - insertions in 3-pt functions
       </NamedObject>
     </elem>
 
-   <elem>
-      <Name>ERASE_NAMED_OBJECT</Name>
-      <Frequency>1</Frequency>
-      <NamedObject>
-        <object_id>sh_2_prop</object_id>
-      </NamedObject>
-    </elem>
-
     <elem>
       <Name>SINK_SMEAR</Name>
       <Frequency>1</Frequency>
@@ -2060,14 +2020,6 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <NamedObject>
         <object_id>sh_2_sh_1_seqprop</object_id>
-      </NamedObject>
-    </elem>
-
-   <elem>
-      <Name>ERASE_NAMED_OBJECT</Name>
-      <Frequency>1</Frequency>
-      <NamedObject>
-        <object_id>sh_2_prop</object_id>
       </NamedObject>
     </elem>
 

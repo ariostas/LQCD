@@ -10,7 +10,7 @@ random.seed()
 FILE_NAMES = ["" for x in range(25)]
 for x in range(1, 6):
     for y in range(1, 6):
-        FILE_NAMES[(x-1)*5+(y-1)] = '../SignalToNoise/PaperData/proton_SrcDG' + str(x) + '_SnkDG' + str(y) + '_Interp4.dat'
+        FILE_NAMES[(x-1)*5+(y-1)] = '/home/arios/Documents/LQCDConfigs/concatenated_new/proton_SrcDG' + str(x) + '_SnkDG' + str(y) + '_Interp4.dat'
 
 
 def read_file(names):
@@ -115,11 +115,13 @@ def find_eigsys(mat):
     init2 = np.matrix(mat[3])
     q1 = np.linalg.cholesky(init)
     q2 = np.linalg.cholesky(init2)
-    q1 = np.linalg.inv(q1)
-    q2 = np.linalg.inv(q2)
+    invq1 = np.linalg.inv(q1)
+    invq2 = np.linalg.inv(q2)
     for x in range(t_size):
-        temp_evals, temp_evecs = np.linalg.eig(q1 * np.matrix(mat[x]) * q1.H)
-        temp_evals2, temp_evecs2 = np.linalg.eig(q2 * np.matrix(mat[x]) * q2.H)
+        temp_evals, temp_evecs = np.linalg.eig(invq1 * np.matrix(mat[x]) * invq1.H)
+        temp_evals2, temp_evecs2 = np.linalg.eig(invq2 * np.matrix(mat[x]) * invq2.H)
+        temp_evecs = invq1.H * temp_evecs
+        temp_evecs2 = invq2.H * temp_evecs2
         order = np.argsort(temp_evals)
         order2 = np.argsort(temp_evals2)
         for y in range(mat_size):

@@ -2,7 +2,7 @@
 
 START_DIR=$PWD
 
-cd /home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450
+cd /home/arios/Documents/LQCDConfigs/wil_16_64_aniso
 mkdir hadspec
 cd hadspec
 

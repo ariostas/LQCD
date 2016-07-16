@@ -75,9 +75,10 @@ void proton(){
     }
 
     vector<TString> corrTypes;
-    for(Int_t x = 1; x <= 5; x++){
-         for(Int_t y = 1; y <= 5; y++){
-            corrTypes.push_back(TString::Format("proton_SrcDG%i_SnkDG%i_Interp4.dat", x, y));
+    for(Int_t x = 1; x <= 3; x++){
+         for(Int_t y = 1; y <= 3; y++){
+            // corrTypes.push_back(TString::Format("proton_SrcDG%i_SnkDG%i_Interp4.dat", x, y));
+            corrTypes.push_back(TString::Format("rho_x.D-2449.DG%i_1.DG%i_1.SS", x, y));
          }
     }
 
@@ -117,7 +118,7 @@ vector<vector<vector<Double_t> > > readData(vector<TString> files){
     for(UInt_t x = 0; x < files.size(); x++){
         cout << "Reading file " << files.at(x) << "..." << endl;
 
-        TString filename = "./PaperData/" + files.at(x);
+        TString filename = "/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/hadspec/" + files.at(x);
 
         ifstream ifs(filename); if(!ifs.is_open()){cout << "Error. File " << filename << " not found. Exiting...\n"; assert(0);}
 
@@ -130,10 +131,10 @@ vector<vector<vector<Double_t> > > readData(vector<TString> files){
         if(NConfigs == 0){cout << "Error reading the file. Exiting..." << endl; assert(0);}
 
         Int_t deltaT = 0;
-        Double_t re = 0, im = 0, unkn = 0;
+        Double_t re = 0, im = 0;//, unkn = 0;
     
         Int_t configCounter = -1;
-        while(ifs >> deltaT >> re >> im >> unkn){
+        while(ifs >> deltaT >> re >> im){
 
             if(deltaT == 0) configCounter++;
 
@@ -339,7 +340,7 @@ vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > > corr,
         vector<vector<Double_t> > tempAv = average(tempcorr);
 
         // First find the mass simply using smeared operators
-        masses.at(x).push_back(effMass(tempAv.at(6)));
+        masses.at(x).push_back(effMass(tempAv.at(4)));
 
         // Then find mass using the variational method
         vector<TMatrixD> tempmat = constructMatrices(tempAv);

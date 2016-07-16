@@ -10,7 +10,7 @@ random.seed()
 FILE_NAMES = ["" for x in range(25)]
 for x in range(1, 6):
     for y in range(1, 6):
-        FILE_NAMES[(x-1)*5+(y-1)] = '../SignalToNoise/PaperData/proton_SrcDG' + str(x) + '_SnkDG' + str(y) + '_Interp4.dat'
+        FILE_NAMES[(x-1)*5+(y-1)] = '/home/arios/Documents/LQCDConfigs/concatenated_new/proton_SrcDG' + str(x) + '_SnkDG' + str(y) + '_Interp4.dat'
 
 
 def read_file(names):
@@ -145,7 +145,7 @@ def find_sink(source, mat, ts):
 def find_opt_sn(source_g, sink_g, mat, ts):
     n_configs, t_size, mat_size, temp = mat.shape
     av_mat = average(mat)
-    n_iter = 20
+    n_iter = 50
     source = np.matrix(source_g)
     sink = np.matrix(sink_g)
     for n in range(n_iter):

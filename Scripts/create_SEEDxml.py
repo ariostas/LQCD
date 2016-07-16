@@ -1,11 +1,17 @@
 n_sources = 3
 n_sinks = 3
-seqsource_type = 'a0-rho_x_1'
-g = 1
-t_sink = 20
+m = -0.9
+seqsource_type = 'NUCL_U_POL'
+i = 0
+t_sink = 14
 s_size = 16
-t_size = 48
+t_size = 64
 
+def smear_factor(x):
+    return 1+x
+
+def smear_iter(x):
+    return 5+5*x
 
 f = open('bar3ptfnSEED.ini.xml', 'w')
 
@@ -31,8 +37,8 @@ for x in range(n_sources):
             '          <t_srce>0 0 0 0</t_srce>\n'+
             '          <SmearingParam>\n'+
             '              <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>\n'+
-            '              <wvf_param>{0}</wvf_param>\n'.format(1+x)+
-            '              <wvfIntPar>{0}</wvfIntPar>\n'.format(10+15*x**2)+
+            '              <wvf_param>{0}</wvf_param>\n'.format(smear_factor(x))+
+            '              <wvfIntPar>{0}</wvfIntPar>\n'.format(smear_iter(x))+
             '              <no_smear_dir>3</no_smear_dir>\n'+
             '            </SmearingParam>\n'+
             '      <Displacement>\n'+
@@ -41,8 +47,8 @@ for x in range(n_sources):
             '            </Displacement>\n'+
             '          <LinkSmearing>\n'+
             '              <LinkSmearingType>APE_SMEAR</LinkSmearingType>\n'+
-            '              <link_smear_fact>{0}</link_smear_fact>\n'.format(1+x)+
-            '              <link_smear_num>{0}</link_smear_num>\n'.format(10+15*x**2)+
+            '              <link_smear_fact>{0}</link_smear_fact>\n'.format(smear_factor(x))+
+            '              <link_smear_num>{0}</link_smear_num>\n'.format(smear_iter(x))+
             '              <no_smear_dir>3</no_smear_dir>\n'+
             '            </LinkSmearing>\n'+
             '      </Source>\n'+
@@ -61,50 +67,41 @@ for x in range(n_sources):
             '        <obsvP>false</obsvP>\n'+
             '        <numRetries>1</numRetries>\n'+
             '        <FermionAction>\n'+
-            '          <FermAct>CLOVER</FermAct>\n'+
-            '             <Mass>-0.2450</Mass>\n'+
-            '          <clovCoeff>1.24930970916466</clovCoeff>\n'+
-            '          <ZeroEnergy>0</ZeroEnergy>\n'+
-            '          <AnisoParam>\n'+
-            '            <anisoP>false</anisoP>\n'+
-            '            <t_dir>3</t_dir>\n'+
-            '            <xi_0>1</xi_0>\n'+
-            '            <nu>1</nu>\n'+
-            '          </AnisoParam>\n'+
-            '        <FermState>\n'+
-            '          <Name>STOUT_FERM_STATE</Name>\n'+
-            '          <rho>0.125</rho>\n'+
-            '          <n_smear>1</n_smear>\n'+
-            '          <orthog_dir>-1</orthog_dir>\n'+
-            '          <FermionBC>\n'+
-            '            <FermBC>SIMPLE_FERMBC</FermBC>\n'+
-            '            <boundary>1 1 1 -1</boundary>\n'+
-            '          </FermionBC>\n'+
-            '        </FermState>\n'+
+            '         <FermAct>WILSON</FermAct>\n'+
+            '         <Mass>{0}</Mass>\n'.format(m)+
+            '         <AnisoParam>\n'+
+            '           <anisoP>true</anisoP>\n'+
+            '           <t_dir>3</t_dir>\n'+
+            '           <xi_0>2.0</xi_0>\n'+
+            '           <nu>2.0</nu>\n'+
+            '         </AnisoParam>\n'+
+            '         <FermionBC>\n'+
+            '           <FermBC>SIMPLE_FERMBC</FermBC>\n'+
+            '           <boundary>1 1 1 -1</boundary>\n'+
+            '         </FermionBC>\n'+
             '        </FermionAction>\n'+
-            '        <InvertParam>\n'+
-            '          <invType>QUDA_CLOVER_INVERTER</invType>\n'+
-            '          <RsdTarget>1.0e-7</RsdTarget>\n'+
-            '          <CloverParams>\n'+
-            '            <Mass>-0.2450</Mass>\n'+
-            '            <clovCoeff>1.24930970916466</clovCoeff>\n'+
-            '           <AnisoParam>\n'+
-            '              <anisoP>false</anisoP>\n'+
+            '    <InvertParam>\n'+
+            '        <invType>QUDA_WILSON_INVERTER</invType>\n'+
+            '        <WilsonParams>\n'+
+            '            <Mass>{0}</Mass>\n'.format(m)+
+            '            <AnisoParam>\n'+
+            '              <anisoP>true</anisoP>\n'+
             '              <t_dir>3</t_dir>\n'+
-            '              <xi_0>1</xi_0>\n'+
-            '              <nu>1</nu>\n'+
+            '              <xi_0>2.0</xi_0>\n'+
+            '              <nu>2.0</nu>\n'+
             '            </AnisoParam>\n'+
-            '          </CloverParams>\n'+
-            '          <Delta>1.0e-8</Delta>\n'+
-            '          <MaxIter>1000</MaxIter>\n'+
-            '          <RsdToleranceFactor>100</RsdToleranceFactor>\n'+
-            '          <SilentFail>true</SilentFail>\n'+
+            '         </WilsonParams>\n'+
+            '          <RsdTarget>1e-8</RsdTarget>\n'+
+            '          <RsdToleranceFactor>1000</RsdToleranceFactor>\n'+
+            '          <Delta>0.5</Delta>\n'+
+            '          <MaxIter>10000</MaxIter>\n'+
             '          <AntiPeriodicT>true</AntiPeriodicT>\n'+
-            '          <SolverType>GCR</SolverType>\n'+
+            '          <SolverType>CG</SolverType>\n'+
             '          <Verbose>false</Verbose>\n'+
             '          <AsymmetricLinop>false</AsymmetricLinop>\n'+
+            '          <CudaPrecision>SINGLE</CudaPrecision>\n'+
             '          <CudaReconstruct>RECONS_NONE</CudaReconstruct>\n'+
-            '          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>\n'+
+            '          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>\n'+
             '          <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>\n'+
             '          <AxialGaugeFix>false</AxialGaugeFix>\n'+
             '          <AutotuneDslash>true</AutotuneDslash>\n'+
@@ -139,14 +136,14 @@ for x in range(n_sources):
                 '          </Displacement>\n'+
                 '        <SmearingParam>\n'+
                 '            <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>\n'+
-                '              <wvf_param>{0}</wvf_param>\n'.format(1+y)+
-                '              <wvfIntPar>{0}</wvfIntPar>\n'.format(10+15*y**2)+
+                '              <wvf_param>{0}</wvf_param>\n'.format(smear_factor(y))+
+                '              <wvfIntPar>{0}</wvfIntPar>\n'.format(smear_iter(y))+
                 '            <no_smear_dir>3</no_smear_dir>\n'+
                 '          </SmearingParam>\n'+
                 '          <LinkSmearing>\n'+
                 '            <LinkSmearingType>APE_SMEAR</LinkSmearingType>\n'+
-                '            <link_smear_fact>{0}</link_smear_fact>\n'.format(1+y)+
-                '            <link_smear_num>{0}</link_smear_num>\n'.format(10+15*y**2)+
+                '            <link_smear_fact>{0}</link_smear_fact>\n'.format(smear_factor(y))+
+                '            <link_smear_num>{0}</link_smear_num>\n'.format(smear_iter(y))+
                 '            <no_smear_dir>3</no_smear_dir>\n'+
                 '          </LinkSmearing>\n'+
                 '        </Sink>\n'+
@@ -209,14 +206,14 @@ for x in range(n_sources):
                 '          </Displacement>\n'+
                 '        <SmearingParam>\n'+
                 '            <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>\n'+
-                '              <wvf_param>{0}</wvf_param>\n'.format(1+y)+
-                '              <wvfIntPar>{0}</wvfIntPar>\n'.format(10+15*y**2)+
+                '              <wvf_param>{0}</wvf_param>\n'.format(smear_factor(y))+
+                '              <wvfIntPar>{0}</wvfIntPar>\n'.format(smear_iter(y))+
                 '            <no_smear_dir>3</no_smear_dir>\n'+
                 '          </SmearingParam>\n'+
                 '          <LinkSmearing>\n'+
                 '            <LinkSmearingType>APE_SMEAR</LinkSmearingType>\n'+
-                '            <link_smear_fact>{0}</link_smear_fact>\n'.format(1+y)+
-                '            <link_smear_num>{0}</link_smear_num>\n'.format(10+15*y**2)+
+                '            <link_smear_fact>{0}</link_smear_fact>\n'.format(smear_factor(y))+
+                '            <link_smear_num>{0}</link_smear_num>\n'.format(smear_iter(y))+
                 '            <no_smear_dir>3</no_smear_dir>\n'+
                 '          </LinkSmearing>\n'+
                 '        </Sink>\n'+
@@ -224,6 +221,7 @@ for x in range(n_sources):
                 '      <NamedObject>\n'+
                 '        <gauge_id>default_gauge_field</gauge_id>\n'+
                 '        <prop_ids>\n'+
+                '          <elem>sh_{0}_prop</elem>\n'.format(x)+
                 '          <elem>sh_{0}_prop</elem>\n'.format(x)+
                 '        </prop_ids>\n'+
                 '        <seqsource_id>sh_{0}_sh_{1}_seqsource</seqsource_id>\n'.format(x,y)+
@@ -238,50 +236,41 @@ for x in range(n_sources):
                 '        <obsvP>false</obsvP>\n'+
                 '        <numRetries>1</numRetries>\n'+
                 '        <FermionAction>\n'+
-                '          <FermAct>CLOVER</FermAct>\n'+
-                '             <Mass>-0.2450</Mass>\n'+
-                '          <clovCoeff>1.24930970916466</clovCoeff>\n'+
-                '          <ZeroEnergy>0</ZeroEnergy>\n'+
-                '          <AnisoParam>\n'+
-                '            <anisoP>false</anisoP>\n'+
-                '            <t_dir>3</t_dir>\n'+
-                '            <xi_0>1</xi_0>\n'+
-                '            <nu>1</nu>\n'+
-                '          </AnisoParam>\n'+
-                '        <FermState>\n'+
-                '          <Name>STOUT_FERM_STATE</Name>\n'+
-                '          <rho>0.125</rho>\n'+
-                '          <n_smear>1</n_smear>\n'+
-                '          <orthog_dir>-1</orthog_dir>\n'+
-                '          <FermionBC>\n'+
-                '            <FermBC>SIMPLE_FERMBC</FermBC>\n'+
-                '            <boundary>1 1 1 -1</boundary>\n'+
-                '          </FermionBC>\n'+
-                '        </FermState>\n'+
+                '         <FermAct>WILSON</FermAct>\n'+
+                '         <Mass>{0}</Mass>\n'.format(m)+
+                '         <AnisoParam>\n'+
+                '           <anisoP>true</anisoP>\n'+
+                '           <t_dir>3</t_dir>\n'+
+                '           <xi_0>2.0</xi_0>\n'+
+                '           <nu>2.0</nu>\n'+
+                '         </AnisoParam>\n'+
+                '         <FermionBC>\n'+
+                '           <FermBC>SIMPLE_FERMBC</FermBC>\n'+
+                '           <boundary>1 1 1 -1</boundary>\n'+
+                '         </FermionBC>\n'+
                 '        </FermionAction>\n'+
-                '        <InvertParam>\n'+
-                '          <invType>QUDA_CLOVER_INVERTER</invType>\n'+
-                '          <RsdTarget>1.0e-7</RsdTarget>\n'+
-                '          <CloverParams>\n'+
-                '            <Mass>-0.2450</Mass>\n'+
-                '            <clovCoeff>1.24930970916466</clovCoeff>\n'+
-                '           <AnisoParam>\n'+
-                '              <anisoP>false</anisoP>\n'+
+                '    <InvertParam>\n'+
+                '        <invType>QUDA_WILSON_INVERTER</invType>\n'+
+                '        <WilsonParams>\n'+
+                '            <Mass>{0}</Mass>\n'.format(m)+
+                '            <AnisoParam>\n'+
+                '              <anisoP>true</anisoP>\n'+
                 '              <t_dir>3</t_dir>\n'+
-                '              <xi_0>1</xi_0>\n'+
-                '              <nu>1</nu>\n'+
+                '              <xi_0>2.0</xi_0>\n'+
+                '              <nu>2.0</nu>\n'+
                 '            </AnisoParam>\n'+
-                '          </CloverParams>\n'+
-                '          <Delta>1.0e-8</Delta>\n'+
-                '          <MaxIter>1000</MaxIter>\n'+
-                '          <RsdToleranceFactor>100</RsdToleranceFactor>\n'+
-                '          <SilentFail>true</SilentFail>\n'+
+                '         </WilsonParams>\n'+
+                '          <RsdTarget>1e-8</RsdTarget>\n'+
+                '          <RsdToleranceFactor>1000</RsdToleranceFactor>\n'+
+                '          <Delta>0.5</Delta>\n'+
+                '          <MaxIter>10000</MaxIter>\n'+
                 '          <AntiPeriodicT>true</AntiPeriodicT>\n'+
-                '          <SolverType>GCR</SolverType>\n'+
+                '          <SolverType>CG</SolverType>\n'+
                 '          <Verbose>false</Verbose>\n'+
                 '          <AsymmetricLinop>false</AsymmetricLinop>\n'+
+                '          <CudaPrecision>SINGLE</CudaPrecision>\n'+
                 '          <CudaReconstruct>RECONS_NONE</CudaReconstruct>\n'+
-                '          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>\n'+
+                '          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>\n'+
                 '          <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>\n'+
                 '          <AxialGaugeFix>false</AxialGaugeFix>\n'+
                 '          <AutotuneDslash>true</AutotuneDslash>\n'+
@@ -316,7 +305,7 @@ for x in range(n_sources):
                 '        <seqprops>\n'+
                 '          <elem>\n'+
                 '            <seqprop_id>sh_{0}_sh_{1}_seqprop</seqprop_id>\n'.format(x,y)+
-                '            <gamma_insertion>{0}</gamma_insertion>\n'.format(g)+
+                '            <gamma_insertion>{0}</gamma_insertion>\n'.format(i)+
                 '          </elem>\n'+
                 '       </seqprops>\n'+
                 '      </NamedObject>\n'+

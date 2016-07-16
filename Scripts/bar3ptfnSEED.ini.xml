@@ -19,7 +19,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
           <SmearingParam>
               <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>1</wvf_param>
-              <wvfIntPar>10</wvfIntPar>
+              <wvfIntPar>5</wvfIntPar>
               <no_smear_dir>3</no_smear_dir>
             </SmearingParam>
       <Displacement>
@@ -29,7 +29,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
           <LinkSmearing>
               <LinkSmearingType>APE_SMEAR</LinkSmearingType>
               <link_smear_fact>1</link_smear_fact>
-              <link_smear_num>10</link_smear_num>
+              <link_smear_num>5</link_smear_num>
               <no_smear_dir>3</no_smear_dir>
             </LinkSmearing>
       </Source>
@@ -49,50 +49,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -129,13 +120,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>1</wvf_param>
-              <wvfIntPar>10</wvfIntPar>
+              <wvfIntPar>5</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>1</link_smear_fact>
-            <link_smear_num>10</link_smear_num>
+            <link_smear_num>5</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -184,8 +175,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -201,13 +192,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>1</wvf_param>
-              <wvfIntPar>10</wvfIntPar>
+              <wvfIntPar>5</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>1</link_smear_fact>
-            <link_smear_num>10</link_smear_num>
+            <link_smear_num>5</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -215,6 +206,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_0_prop</elem>
           <elem>sh_0_prop</elem>
         </prop_ids>
         <seqsource_id>sh_0_sh_0_seqsource</seqsource_id>
@@ -230,50 +222,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -309,7 +292,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_0_sh_0_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -339,13 +322,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>2</wvf_param>
-              <wvfIntPar>25</wvfIntPar>
+              <wvfIntPar>10</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>2</link_smear_fact>
-            <link_smear_num>25</link_smear_num>
+            <link_smear_num>10</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -394,8 +377,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -411,13 +394,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>2</wvf_param>
-              <wvfIntPar>25</wvfIntPar>
+              <wvfIntPar>10</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>2</link_smear_fact>
-            <link_smear_num>25</link_smear_num>
+            <link_smear_num>10</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -425,6 +408,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_0_prop</elem>
           <elem>sh_0_prop</elem>
         </prop_ids>
         <seqsource_id>sh_0_sh_1_seqsource</seqsource_id>
@@ -440,50 +424,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -519,7 +494,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_0_sh_1_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -549,13 +524,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>3</wvf_param>
-              <wvfIntPar>70</wvfIntPar>
+              <wvfIntPar>15</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>3</link_smear_fact>
-            <link_smear_num>70</link_smear_num>
+            <link_smear_num>15</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -604,8 +579,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -621,13 +596,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>3</wvf_param>
-              <wvfIntPar>70</wvfIntPar>
+              <wvfIntPar>15</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>3</link_smear_fact>
-            <link_smear_num>70</link_smear_num>
+            <link_smear_num>15</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -635,6 +610,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_0_prop</elem>
           <elem>sh_0_prop</elem>
         </prop_ids>
         <seqsource_id>sh_0_sh_2_seqsource</seqsource_id>
@@ -650,50 +626,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -729,7 +696,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_0_sh_2_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -764,7 +731,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
           <SmearingParam>
               <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>2</wvf_param>
-              <wvfIntPar>25</wvfIntPar>
+              <wvfIntPar>10</wvfIntPar>
               <no_smear_dir>3</no_smear_dir>
             </SmearingParam>
       <Displacement>
@@ -774,7 +741,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
           <LinkSmearing>
               <LinkSmearingType>APE_SMEAR</LinkSmearingType>
               <link_smear_fact>2</link_smear_fact>
-              <link_smear_num>25</link_smear_num>
+              <link_smear_num>10</link_smear_num>
               <no_smear_dir>3</no_smear_dir>
             </LinkSmearing>
       </Source>
@@ -794,50 +761,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -874,13 +832,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>1</wvf_param>
-              <wvfIntPar>10</wvfIntPar>
+              <wvfIntPar>5</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>1</link_smear_fact>
-            <link_smear_num>10</link_smear_num>
+            <link_smear_num>5</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -929,8 +887,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -946,13 +904,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>1</wvf_param>
-              <wvfIntPar>10</wvfIntPar>
+              <wvfIntPar>5</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>1</link_smear_fact>
-            <link_smear_num>10</link_smear_num>
+            <link_smear_num>5</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -960,6 +918,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_1_prop</elem>
           <elem>sh_1_prop</elem>
         </prop_ids>
         <seqsource_id>sh_1_sh_0_seqsource</seqsource_id>
@@ -975,50 +934,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -1054,7 +1004,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_1_sh_0_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -1084,13 +1034,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>2</wvf_param>
-              <wvfIntPar>25</wvfIntPar>
+              <wvfIntPar>10</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>2</link_smear_fact>
-            <link_smear_num>25</link_smear_num>
+            <link_smear_num>10</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1139,8 +1089,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -1156,13 +1106,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>2</wvf_param>
-              <wvfIntPar>25</wvfIntPar>
+              <wvfIntPar>10</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>2</link_smear_fact>
-            <link_smear_num>25</link_smear_num>
+            <link_smear_num>10</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1170,6 +1120,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_1_prop</elem>
           <elem>sh_1_prop</elem>
         </prop_ids>
         <seqsource_id>sh_1_sh_1_seqsource</seqsource_id>
@@ -1185,50 +1136,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -1264,7 +1206,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_1_sh_1_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -1294,13 +1236,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>3</wvf_param>
-              <wvfIntPar>70</wvfIntPar>
+              <wvfIntPar>15</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>3</link_smear_fact>
-            <link_smear_num>70</link_smear_num>
+            <link_smear_num>15</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1349,8 +1291,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -1366,13 +1308,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>3</wvf_param>
-              <wvfIntPar>70</wvfIntPar>
+              <wvfIntPar>15</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>3</link_smear_fact>
-            <link_smear_num>70</link_smear_num>
+            <link_smear_num>15</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1380,6 +1322,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_1_prop</elem>
           <elem>sh_1_prop</elem>
         </prop_ids>
         <seqsource_id>sh_1_sh_2_seqsource</seqsource_id>
@@ -1395,50 +1338,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -1474,7 +1408,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_1_sh_2_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -1509,7 +1443,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
           <SmearingParam>
               <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>3</wvf_param>
-              <wvfIntPar>70</wvfIntPar>
+              <wvfIntPar>15</wvfIntPar>
               <no_smear_dir>3</no_smear_dir>
             </SmearingParam>
       <Displacement>
@@ -1519,7 +1453,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
           <LinkSmearing>
               <LinkSmearingType>APE_SMEAR</LinkSmearingType>
               <link_smear_fact>3</link_smear_fact>
-              <link_smear_num>70</link_smear_num>
+              <link_smear_num>15</link_smear_num>
               <no_smear_dir>3</no_smear_dir>
             </LinkSmearing>
       </Source>
@@ -1539,50 +1473,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -1619,13 +1544,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>1</wvf_param>
-              <wvfIntPar>10</wvfIntPar>
+              <wvfIntPar>5</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>1</link_smear_fact>
-            <link_smear_num>10</link_smear_num>
+            <link_smear_num>5</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1674,8 +1599,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -1691,13 +1616,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>1</wvf_param>
-              <wvfIntPar>10</wvfIntPar>
+              <wvfIntPar>5</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>1</link_smear_fact>
-            <link_smear_num>10</link_smear_num>
+            <link_smear_num>5</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1705,6 +1630,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_2_prop</elem>
           <elem>sh_2_prop</elem>
         </prop_ids>
         <seqsource_id>sh_2_sh_0_seqsource</seqsource_id>
@@ -1720,50 +1646,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -1799,7 +1716,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_2_sh_0_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -1829,13 +1746,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>2</wvf_param>
-              <wvfIntPar>25</wvfIntPar>
+              <wvfIntPar>10</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>2</link_smear_fact>
-            <link_smear_num>25</link_smear_num>
+            <link_smear_num>10</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1884,8 +1801,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -1901,13 +1818,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>2</wvf_param>
-              <wvfIntPar>25</wvfIntPar>
+              <wvfIntPar>10</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>2</link_smear_fact>
-            <link_smear_num>25</link_smear_num>
+            <link_smear_num>10</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -1915,6 +1832,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_2_prop</elem>
           <elem>sh_2_prop</elem>
         </prop_ids>
         <seqsource_id>sh_2_sh_1_seqsource</seqsource_id>
@@ -1930,50 +1848,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -2009,7 +1918,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_2_sh_1_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -2039,13 +1948,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>3</wvf_param>
-              <wvfIntPar>70</wvfIntPar>
+              <wvfIntPar>15</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>3</link_smear_fact>
-            <link_smear_num>70</link_smear_num>
+            <link_smear_num>15</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -2094,8 +2003,8 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <Frequency>1</Frequency>
       <Param>
         <version>1</version>
-        <seq_src>a0-rho_x_1</seq_src>
-        <t_sink>20</t_sink>
+        <seq_src>NUCL_U_POL</seq_src>
+        <t_sink>14</t_sink>
         <sink_mom>0 0 0</sink_mom>
       </Param>
       <PropSink>
@@ -2111,13 +2020,13 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <SmearingParam>
             <wvf_kind>GAUGE_INV_GAUSSIAN</wvf_kind>
               <wvf_param>3</wvf_param>
-              <wvfIntPar>70</wvfIntPar>
+              <wvfIntPar>15</wvfIntPar>
             <no_smear_dir>3</no_smear_dir>
           </SmearingParam>
           <LinkSmearing>
             <LinkSmearingType>APE_SMEAR</LinkSmearingType>
             <link_smear_fact>3</link_smear_fact>
-            <link_smear_num>70</link_smear_num>
+            <link_smear_num>15</link_smear_num>
             <no_smear_dir>3</no_smear_dir>
           </LinkSmearing>
         </Sink>
@@ -2125,6 +2034,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
       <NamedObject>
         <gauge_id>default_gauge_field</gauge_id>
         <prop_ids>
+          <elem>sh_2_prop</elem>
           <elem>sh_2_prop</elem>
         </prop_ids>
         <seqsource_id>sh_2_sh_2_seqsource</seqsource_id>
@@ -2140,50 +2050,41 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <obsvP>false</obsvP>
         <numRetries>1</numRetries>
         <FermionAction>
-          <FermAct>CLOVER</FermAct>
-             <Mass>-0.2450</Mass>
-          <clovCoeff>1.24930970916466</clovCoeff>
-          <ZeroEnergy>0</ZeroEnergy>
-          <AnisoParam>
-            <anisoP>false</anisoP>
-            <t_dir>3</t_dir>
-            <xi_0>1</xi_0>
-            <nu>1</nu>
-          </AnisoParam>
-        <FermState>
-          <Name>STOUT_FERM_STATE</Name>
-          <rho>0.125</rho>
-          <n_smear>1</n_smear>
-          <orthog_dir>-1</orthog_dir>
-          <FermionBC>
-            <FermBC>SIMPLE_FERMBC</FermBC>
-            <boundary>1 1 1 -1</boundary>
-          </FermionBC>
-        </FermState>
+         <FermAct>WILSON</FermAct>
+         <Mass>-0.9</Mass>
+         <AnisoParam>
+           <anisoP>true</anisoP>
+           <t_dir>3</t_dir>
+           <xi_0>2.0</xi_0>
+           <nu>2.0</nu>
+         </AnisoParam>
+         <FermionBC>
+           <FermBC>SIMPLE_FERMBC</FermBC>
+           <boundary>1 1 1 -1</boundary>
+         </FermionBC>
         </FermionAction>
-        <InvertParam>
-          <invType>QUDA_CLOVER_INVERTER</invType>
-          <RsdTarget>1.0e-7</RsdTarget>
-          <CloverParams>
-            <Mass>-0.2450</Mass>
-            <clovCoeff>1.24930970916466</clovCoeff>
-           <AnisoParam>
-              <anisoP>false</anisoP>
+    <InvertParam>
+        <invType>QUDA_WILSON_INVERTER</invType>
+        <WilsonParams>
+            <Mass>-0.9</Mass>
+            <AnisoParam>
+              <anisoP>true</anisoP>
               <t_dir>3</t_dir>
-              <xi_0>1</xi_0>
-              <nu>1</nu>
+              <xi_0>2.0</xi_0>
+              <nu>2.0</nu>
             </AnisoParam>
-          </CloverParams>
-          <Delta>1.0e-8</Delta>
-          <MaxIter>1000</MaxIter>
-          <RsdToleranceFactor>100</RsdToleranceFactor>
-          <SilentFail>true</SilentFail>
+         </WilsonParams>
+          <RsdTarget>1e-8</RsdTarget>
+          <RsdToleranceFactor>1000</RsdToleranceFactor>
+          <Delta>0.5</Delta>
+          <MaxIter>10000</MaxIter>
           <AntiPeriodicT>true</AntiPeriodicT>
-          <SolverType>GCR</SolverType>
+          <SolverType>CG</SolverType>
           <Verbose>false</Verbose>
           <AsymmetricLinop>false</AsymmetricLinop>
+          <CudaPrecision>SINGLE</CudaPrecision>
           <CudaReconstruct>RECONS_NONE</CudaReconstruct>
-          <CudaSloppyPrecision>SINGLE</CudaSloppyPrecision>
+          <CudaSloppyPrecision>HALF</CudaSloppyPrecision>
           <CudaSloppyReconstruct>RECONS_NONE</CudaSloppyReconstruct>
           <AxialGaugeFix>false</AxialGaugeFix>
           <AutotuneDslash>true</AutotuneDslash>
@@ -2219,7 +2120,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
         <seqprops>
           <elem>
             <seqprop_id>sh_2_sh_2_seqprop</seqprop_id>
-            <gamma_insertion>1</gamma_insertion>
+            <gamma_insertion>0</gamma_insertion>
           </elem>
        </seqprops>
       </NamedObject>
@@ -2242,7 +2143,7 @@ Calculate bar3ptfn - insertions in 3-pt functions
     </elem>
 
   </InlineMeasurements>
-   <nrow>16 16 16 48</nrow>
+   <nrow>16 16 16 64</nrow>
 </Param>
 <RNG>
   <Seed>

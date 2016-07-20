@@ -1,11 +1,13 @@
+#!/usr/bin/python3
 import numpy as np
 import math
 import cmath
 import random
 import matplotlib.pyplot as plt
+import scipy
 
-# file_prefix = '/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/'
-file_prefix = '/home/arios/Documents/LQCDConfigs/wil_16_64_aniso/'
+# file_prefix = '/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/attempt3/'
+file_prefix = '/home/arios/Documents/LQCDConfigs/wil_16_64_aniso/attempt2/'
 threeptfn_file = 'bar3ptfn/{0}_cur3ptfn_{1}_i{2}_g{3}_qx{4}_qy{5}_qz{6}_pfx{7}_pfy{8}_pfz{9}.{10}.{11}.SS'
 twoptfn_0_file = 'hadspec/{0}.D{1}.{2}.{3}.SS'
 twoptfn_other_file = 'hadspec/{0}_px{1}_py{2}_pz{3}.D{4}.{5}.{6}.SS'
@@ -152,8 +154,8 @@ def find_sink(source, mat, ts):
 def find_opt_sn(source_g, sink_g, mat, ts):
     n_configs, t_size, mat_size, temp = mat.shape
     av_mat = average(mat)
-    n_iter = 50
-    n_tries = 10
+    n_iter = 20
+    n_tries = 2
     converged = False
     for tries in range(n_tries):
         s1 = np.random.random()+0.001
@@ -268,7 +270,7 @@ def compute_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink):
         r = twoptfn_snk[t_sink].real/twoptfn_src[t_sink].real
         r *= twoptfn_snk[tau].real/twoptfn_src[tau].real
         r *= twoptfn_src[t_sink-tau].real/twoptfn_snk[t_sink-tau].real
-        r = math.sqrt(r)
+        r = math.sqrt(abs(r))
         r *= threeptfn[tau].real/twoptfn_snk[t_sink].real
         ff[tau] = r
     return ff
@@ -276,7 +278,7 @@ def compute_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink):
 
 def find_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink, t0, t1):
     n_configs, t_size, mat_size, temp = threeptfn.shape
-    n_boot = 100
+    n_boot = 50
     n_failed = 0
     all_ff = np.zeros((n_boot, 4, t_sink+1))
     for x in range(0, n_boot):
@@ -356,7 +358,7 @@ sources = ['DG1_1', 'DG2_1', 'DG3_1']
 sinks = ['DG1_1', 'DG2_1', 'DG3_1']
 
 t0 = 2 # time used for generalized eigenvalue problem
-t1 = 13 # time at which variational source is picked, and used for S/N optimization
+t1 = 15 # time at which variational source is picked, and used for S/N optimization
 t_sink = 14
 
 rho_3ptfn_x_corr = read_file(data_type='3ptfn', g=1, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0), current='nonlocal')
@@ -391,7 +393,7 @@ rho_fferr = [rho_fferr_x, rho_fferr_y, rho_fferr_z, rho_fferr_t]
 labels = ['x', 'y', 'z', 't']
 xlab = np.arange(0, 32, 1)
 
-plt.figure(1, figsize=(8, 8))
+plt.figure(1, figsize=(15, 12))
 for x in range(4):
     plt.subplot(411+x)
     plt.errorbar(np.resize(xlab, t_sink+1), rho_ff[x][0], yerr=rho_fferr[x][0], color='b', ecolor='b', fmt='^', capsize=2, label='Smeared')
@@ -404,7 +406,7 @@ for x in range(4):
     if(x == 0):
         plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=4, mode='expand', borderaxespad=0.)
 
-plt.figure(2, figsize=(8,8))
+plt.figure(2, figsize=(15, 12))
 plt.errorbar(xlab, np.resize(rho_mass[0], 32), yerr=np.resize(rho_masserr[0], 32), color='b', ecolor='b', fmt='^', capsize=2, label='Smeared')
 plt.errorbar(xlab, np.resize(rho_mass[1], 32), yerr=np.resize(rho_masserr[1], 32), color='r', ecolor='r', fmt='v', capsize=2, label='Variational')
 plt.errorbar(xlab, np.resize(rho_mass[2], 32), yerr=np.resize(rho_masserr[2], 32), color='g', ecolor='g', fmt='o', capsize=2, label='Variational source + S/N sink')
@@ -415,7 +417,7 @@ plt.xlim(-0.5, 31.5)
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=4, mode='expand', borderaxespad=0.)
 
 type_labels = ['Smeared', 'Variational', 'Var + S/N', 'S/N']
-plt.figure(3, figsize=(8,8))
+plt.figure(3, figsize=(15, 12))
 for x in range(4):
     plt.subplot(411+x)
     plt.errorbar(xlab, np.resize(rho_mass[x], 32), yerr=np.resize(rho_masserr[x], 32), color='b', ecolor='b', fmt='^', capsize=2)

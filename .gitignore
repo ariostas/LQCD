@@ -32,6 +32,7 @@
 ##PYTHON
 *.pyc
 __init__.py
+temp*
 
 ## Images
 *.jpg

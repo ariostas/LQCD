@@ -4,7 +4,8 @@ import math
 import cmath
 import random
 import matplotlib.pyplot as plt
-import fits
+import fits2 as fits
+import multiprocessing
 
 # file_prefix = '/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/'
 file_prefix = '/home/arios/Documents/LQCDConfigs/wil_16_64_aniso/'
@@ -254,6 +255,7 @@ def find_gnd_masses(twoptfn, t0, t1):
         masses[x, 5] = eff_masses(var_2ptfn_corr)
         # print(temp_evals[:,t1])
         # print(var_src)
+        # print('var: ',var_src)
         ##############################
         #### Var src and S/N snk #####
         ##############################
@@ -272,6 +274,7 @@ def find_gnd_masses(twoptfn, t0, t1):
             sn_2ptfn_corr = compute_corr(sn_src, sn_snk, av_2ptfn)
             masses[x, 7] = eff_masses(sn_2ptfn_corr)
             # print(sn_src)
+            # print('sn: ',sn_src)
         ##############################
     av_masses = np.zeros((8, t_size))
     for x in range(0, n_boot):
@@ -337,7 +340,7 @@ def find_gnd_massesandcorrs(twoptfn, t0, t1):
         var_2ptfn_corr = compute_corr(var_src, var_src, av_2ptfn)
         masses[x, 5] = eff_masses(var_2ptfn_corr)
         # print(temp_evals[:,t1])
-        # print(var_src)
+        print('var: ',var_src)
         ##############################
         #### Var src and S/N snk #####
         ##############################
@@ -357,7 +360,7 @@ def find_gnd_massesandcorrs(twoptfn, t0, t1):
             corrs[x, 7] = compute_fullcorr(sn_src, sn_snk, temp_2ptfn)
             sn_2ptfn_corr = compute_corr(sn_src, sn_snk, av_2ptfn)
             masses[x, 7] = eff_masses(sn_2ptfn_corr)
-            # print(sn_src)
+            print('sn: ',sn_src)
         ##############################
     av_masses = np.zeros((8, t_size))
     av_corrs = np.zeros((8, n_configs, t_size))
@@ -503,7 +506,7 @@ rho_2ptfn_snkp_mat = construct_matrices(rho_2ptfn_snkp_corr)
 # rho_ff_y, rho_fferr_y = find_ff(rho_3ptfn_y_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, t_sink, t0, t1)
 # rho_ff_z, rho_fferr_z = find_ff(rho_3ptfn_z_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, t_sink, t0, t1)
 # rho_ff_t, rho_fferr_t = find_ff(rho_3ptfn_t_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, t_sink, t0, t1)
-rho_mass, rho_masserr = find_gnd_masses(rho_2ptfn_snkp_mat, t0, t1)
+# rho_mass, rho_masserr = find_gnd_masses(rho_2ptfn_snkp_mat, t0, t1)
 
 smeared_src1 = np.matrix([[1],[0],[0],[0],[0]])
 smeared_src2 = np.matrix([[0],[1],[0],[0],[0]])
@@ -531,20 +534,50 @@ sn_src, sn_snk = find_opt_sn(guess, guess, rho_2ptfn_snkp_mat, t1)
 corr_sn = compute_fullcorr(sn_src, sn_snk, rho_2ptfn_snkp_mat)
 
 masses = np.zeros(8)
-masseserr = np.zeros(8)
+massesstaterr = np.zeros(8)
+massessyserr = np.zeros(8)
 fitrange = np.zeros((8,8))
 
-masses[0], masseserr[0], fitrange[0][0], fitrange[0][1] = fits.scan_fit(corr_src1, [0.0005, 0.5])
-masses[1], masseserr[1], fitrange[1][0], fitrange[1][1] = fits.scan_fit(corr_src2, [0.0005, 0.5])
-masses[2], masseserr[2], fitrange[2][0], fitrange[2][1] = fits.scan_fit(corr_src3, [0.0005, 0.5])
-masses[3], masseserr[3], fitrange[3][0], fitrange[3][1] = fits.scan_fit(corr_src4, [0.0005, 0.5])
-masses[4], masseserr[4], fitrange[4][0], fitrange[4][1] = fits.scan_fit(corr_src5, [0.0005, 0.5])
-masses[5], masseserr[5], fitrange[5][0], fitrange[5][1] = fits.scan_fit(corr_var, [0.0005, 0.5])
-masses[6], masseserr[6], fitrange[6][0], fitrange[6][1] = fits.scan_fit(corr_varsn, [0.0005, 0.5])
-masses[7], masseserr[7], fitrange[7][0], fitrange[7][1] = fits.scan_fit(corr_sn, [0.0005, 0.5])
+results = multiprocessing.Queue()
+
+threads = []
+threadnames = ['src1', 'src2', 'src3', 'src4', 'src5', 'var', 'varsn', 'sn']
+corrs = [corr_src1, corr_src2, corr_src3, corr_src4, corr_src5, corr_var, corr_varsn, corr_sn]
+
+for x in range(len(threadnames)):
+    threads.append(multiprocessing.Process(target=fits.scan_fit, args=(corrs[x], [0.0005, 0.5], results, threadnames[x])))
+
+for x in threads:
+    x.start()
+
+rho_mass, rho_masserr = find_gnd_masses(rho_2ptfn_snkp_mat, t0, t1)
+
+for x in threads:
+    x.join()
+
+for x in range(len(threadnames)):
+    l = results.get()
+    for y in range(len(threadnames)):
+        if(l[0] == threadnames[y]):
+            name, masses[y], massesstaterr[y], massessyserr[y], fitrange[y][0], fitrange[y][1] = l
+            break
+
 
 for x in range(8):
-    print('corr {0}: mass = {1} +- {2}'.format(x, masses[x], masseserr[x]))
+    print(threadnames[x]+': Mass = '+str(masses[x])+' +- '+str(massesstaterr[x])+' (stat) +- '+str(massessyserr[x])+' (sys)')
+
+# masses[5], masseserr[5], fitrange[5][0], fitrange[5][1] = async_result1.get()
+# masses[6], masseserr[6], fitrange[6][0], fitrange[6][1] = async_result2.get()
+# masses[7], masseserr[7], fitrange[7][0], fitrange[7][1] = async_result3.get()
+
+# masses[0], masseserr[0], fitrange[0][0], fitrange[0][1] = fits.scan_fit(corr_src1, [0.0005, 0.5])
+# masses[1], masseserr[1], fitrange[1][0], fitrange[1][1] = fits.scan_fit(corr_src2, [0.0005, 0.5])
+# masses[2], masseserr[2], fitrange[2][0], fitrange[2][1] = fits.scan_fit(corr_src3, [0.0005, 0.5])
+# masses[3], masseserr[3], fitrange[3][0], fitrange[3][1] = fits.scan_fit(corr_src4, [0.0005, 0.5])
+# masses[4], masseserr[4], fitrange[4][0], fitrange[4][1] = fits.scan_fit(corr_src5, [0.0005, 0.5])
+# masses[5], masseserr[5], fitrange[5][0], fitrange[5][1] = fits.scan_fit(corr_var, [0.0005, 0.5])
+# masses[6], masseserr[6], fitrange[6][0], fitrange[6][1] = fits.scan_fit(corr_varsn, [0.0005, 0.5])
+# masses[7], masseserr[7], fitrange[7][0], fitrange[7][1] = fits.scan_fit(corr_sn, [0.0005, 0.5])
 
 # nmin = 7
 # nmax= 27
@@ -569,11 +602,11 @@ for x in range(5):
     plt.xlim(-0.5, 31.5)
     # plt.yscale('log', nonposy='clip')
     plt.ylim(0, 2)
-    xp = np.linspace(fitrange[x][0]-0.5, fitrange[x][1]+0.5, 100)
+    xp = np.linspace(fitrange[x][0], fitrange[x][1], 100)
     yp = np.zeros(len(xp))
     for i in range(len(xp)):
         yp[i] = masses[x]
-    plt.plot(xp, yp)
+    plt.plot(xp, yp, color='r')
 
 plt.figure(2, figsize=(16, 12))
 for x in range(3):
@@ -584,11 +617,11 @@ for x in range(3):
     plt.xlim(-0.5, 31.5)
     # plt.yscale('log', nonposy='clip')
     plt.ylim(0, 2)
-    xp = np.linspace(fitrange[x+5][0]-0.5, fitrange[x+5][1]+0.5, 100)
+    xp = np.linspace(fitrange[x+5][0], fitrange[x+5][1], 100)
     yp = np.zeros(len(xp))
     for i in range(len(xp)):
         yp[i] = masses[x+5]
-    plt.plot(xp, yp)
+    plt.plot(xp, yp, color='r')
 
 # plt.figure(2, figsize=(15, 12))
 # for x in range(3,6):

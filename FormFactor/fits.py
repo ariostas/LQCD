@@ -5,6 +5,7 @@ import cmath
 import random
 from scipy import optimize
 import matplotlib.pyplot as plt
+import multiprocessing
 
 
 def average(corr):
@@ -50,7 +51,7 @@ def chi2(param, av_corr, w_mat, fit_func, Nt, nmin, nmax):
     for x in range(nmin, nmax+1):
         for y in range(nmin, nmax+1):
             x2 += (av_corr[x] - fit_func(x, Nt, param))*w_mat[x,y]*(av_corr[y] - fit_func(y, Nt, param))
-    x2 = x2/float(nmax - nmin - 1)
+    # x2 = x2/float(nmax - nmin - 1)
     return x2
 
 
@@ -113,14 +114,14 @@ def fit_correrr(corr, nmin, nmax, par_guess, func='exp'):
             # print(str(chi2(param, av_corr, w_mat, fit_func, Nt, nmin, nmax))+'  '+str(m_low)+'  '+str(res.x[1]))
         while(chi2((amp,m_high), av_corr, w_mat, fit_func, Nt, nmin, nmax) - chi2_min < 1):
             m_high = m_high + step
-        print(str(m_high)+'  '+str(m_low))
-        return res.x, (m_high - m_low)/2., chi2_min
+        # print(str(m_high)+'  '+str(m_low))
+        return res.x, (m_high - m_low)/2., chi2_min/float(nmax - nmin - 1)
     else:
         print('\033[1;31mMinimization failed\033[0m')
         print(res.message)
         return [0,0], 0, 0
 
-def scan_fit(corr, par_guess, nmin=10, nmax=17, func='exp'):
+def scan_fit(corr, par_guess, res, name, nmin=10, nmax=17, func='exp'):
     print('Scanning fit range...')
     n_configs, t_size = corr.shape
     n_low = []
@@ -131,27 +132,27 @@ def scan_fit(corr, par_guess, nmin=10, nmax=17, func='exp'):
         temp1, temp2, temp3 = fit_correrr(corr, nmax-2-x, nmax, par_guess, func)
         n_low.append(nmax-2-x)
         chi_low.append(temp3)
-        if(temp3 > 50):
+        if(temp3 > 10):
             break
     for x in range(t_size-nmin-2):
         temp1, temp2, temp3 = fit_correrr(corr, nmin, nmin+2+x, par_guess, func)
         n_high.append(nmin+2+x)
         chi_high.append(temp3)
-        if(temp3 > 50):
+        if(temp3 > 10):
             break
-    print(chi_low)
-    print(chi_high)
+    # print(chi_low)
+    # print(chi_high)
     n_min = 0
     n_max = 0
     for x in range(len(n_low)):
-        if(chi_low[x] < 5):
+        if(chi_low[x] < 6):
             n_min = n_low[x]
     for x in range(len(n_high)):
-        if(chi_high[x] < 5):
+        if(chi_high[x] < 3 and n_high[x] < 32):
             n_max = n_high[x]
     all_mass = []
     all_masserr = []
-    print(str(n_min)+'    '+str(n_max))
+    # print(str(n_min)+'    '+str(n_max))
     for x in range(3):
         for y in range(3):
             temp1, temp2, temp3 = fit_correrr(corr, n_min-1+x, n_max-1+y, par_guess, func)
@@ -165,5 +166,6 @@ def scan_fit(corr, par_guess, nmin=10, nmax=17, func='exp'):
     for x in range(len(all_mass)):
         std_mass += (all_mass[x]-av_mass)**2
     std_mass = 1./9.*std_mass**(1./2.)
-    print('Mass = '+str(av_mass)+' +- '+str(av_masserr)+' +- '+str(std_mass))
-    return av_mass, av_masserr+std_mass, n_min, n_max
+    # print('Mass = '+str(av_mass)+' +- '+str(av_masserr)+' +- '+str(std_mass))
+    res.put([name, av_mass, av_masserr, std_mass, n_min, n_max])
+    # return av_mass, av_masserr+std_mass, n_min, n_max

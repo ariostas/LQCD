@@ -75,10 +75,10 @@ void proton(){
     }
 
     vector<TString> corrTypes;
-    for(Int_t x = 1; x <= 3; x++){
-         for(Int_t y = 1; y <= 3; y++){
+    for(Int_t x = 0; x <= 0; x++){
+         for(Int_t y = 0; y <= 0; y++){
             // corrTypes.push_back(TString::Format("proton_SrcDG%i_SnkDG%i_Interp4.dat", x, y));
-            corrTypes.push_back(TString::Format("rho_x.D-2449.DG%i_1.DG%i_1.SS", x, y));
+            corrTypes.push_back(TString::Format("proton.D-8999.DG%i_1.DG%i_1.SS", x, y));
          }
     }
 
@@ -95,18 +95,18 @@ void proton(){
 
     vector<TGraphErrors*> massgraphs092 = makeGraphs(masses092, massErrors092);
 
-    // vector<vector<Double_t> > masses(1);
-    // Double_t m1, e1;
-    // m1 = findMassBoot(gndcorr092, 4, 14, e1, 7.33767e-01, 5.02458e-01);
-    // masses.at(0).push_back(m1); masses.at(0).push_back(e1); masses.at(0).push_back(4); masses.at(0).push_back(14);
+    vector<vector<Double_t> > masses(1);
+    Double_t m1, e1;
+    m1 = findMassBoot(correlators092[0], 4, 14, e1, 7.33767e-01, 5.02458e-01);
+    masses.at(0).push_back(m1); masses.at(0).push_back(e1); masses.at(0).push_back(4); masses.at(0).push_back(14);
 
     vector<TString> names = {"Smeared source and sink", "Variational Method", "Source optimized + S/N sink", "S/N optimized source and sink"};
 
     // graph(graphs092, names, "#Deltat", "Eigenvalues(#Deltat)", "protonVarCorrs092", 0, "log");
 
-    graph(massgraphs092, names, "#Deltat", "M(#Deltat)", "protonVarMass092");
+    // graph(massgraphs092, names, "#Deltat", "M(#Deltat)", "protonVarMass092");
 
-    // scanFitRange(gndcorr092);
+    scanFitRange(correlators092[0]);
 
 }
 
@@ -118,13 +118,14 @@ vector<vector<vector<Double_t> > > readData(vector<TString> files){
     for(UInt_t x = 0; x < files.size(); x++){
         cout << "Reading file " << files.at(x) << "..." << endl;
 
-        TString filename = "/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/hadspec/" + files.at(x);
+        // TString filename = "/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/hadspec/" + files.at(x);
+        TString filename = "/home/arios/Documents/LQCDConfigs/wil_16_64_aniso/attempt5/hadspec/" + files.at(x);
 
         ifstream ifs(filename); if(!ifs.is_open()){cout << "Error. File " << filename << " not found. Exiting...\n"; assert(0);}
 
         Int_t NConfigs = 0, Nt = 0, IsComplex = 0, Ns = 0, temp = 0;
         Double_t temp2 = 0;
-        ifs >> NConfigs >> Nt >> IsComplex >> Ns >> temp >> temp2;
+        ifs >> NConfigs >> Nt >> IsComplex >> Ns >> temp;
 
         vector<vector<Double_t> > corr(NConfigs);
 
@@ -340,7 +341,7 @@ vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > > corr,
         vector<vector<Double_t> > tempAv = average(tempcorr);
 
         // First find the mass simply using smeared operators
-        masses.at(x).push_back(effMass(tempAv.at(4)));
+        masses.at(x).push_back(effMass(tempAv.at(0)));
 
         // Then find mass using the variational method
         vector<TMatrixD> tempmat = constructMatrices(tempAv);
@@ -348,35 +349,35 @@ vector<vector<Double_t> > findGndMasses(vector<vector<vector<Double_t> > > corr,
         masses.at(x).push_back(effMass(findEigenvalues(tempmat, eigenvectors).at(0)));
 
         // Now find the mass using a S/N optimized sinks
-        Int_t ts = 20;
-        TMatrixD source = eigenvectors.at(0).at(ts);
-        source *= 1./Sqrt((transpose(source) * source)(0,0));
-        TMatrixD sink = findSink(tempcorr, source, tempmat, ts);
-        vector<Double_t> tempcorr2 = findCorrFromVec(source, sink, tempmat);
+        // Int_t ts = 20;
+        // TMatrixD source = eigenvectors.at(0).at(ts);
+        // source *= 1./Sqrt((transpose(source) * source)(0,0));
+        // TMatrixD sink = findSink(tempcorr, source, tempmat, ts);
+        // vector<Double_t> tempcorr2 = findCorrFromVec(source, sink, tempmat);
         // for(UInt_t a = 0; a < tempcorr2.size(); a++){
         // 	cout << tempcorr2.at(a) << endl;
         // }
         // cout << endl;
         // cout << (transpose(source) * source)(0,0) << "  " << (transpose(sink) * sink)(0,0) << "  " << (transpose(sink) * source)(0,0) << endl;
-        masses.at(x).push_back(effMass(tempcorr2));
+        // masses.at(x).push_back(effMass(tempcorr2));
 
         // Finally, find the mass using S/N optimized sources and sinks
         // TMatrixD start = source;
-        TMatrixD start(5,1); start(1,0) = 1;
-        TMatrixD sourceSN = start, sinkSN = start;
-        findOptimalSN(tempcorr, sourceSN, sinkSN, tempmat, ts);
-        vector<Double_t> tempcorr3 = findCorrFromVec(sourceSN, sinkSN, tempmat);
-        masses.at(x).push_back(effMass(tempcorr3));
+        // TMatrixD start(5,1); start(1,0) = 1;
+        // TMatrixD sourceSN = start, sinkSN = start;
+        // findOptimalSN(tempcorr, sourceSN, sinkSN, tempmat, ts);
+        // vector<Double_t> tempcorr3 = findCorrFromVec(sourceSN, sinkSN, tempmat);
+        // masses.at(x).push_back(effMass(tempcorr3));
 
-        cout << (transpose(sourceSN) * start)(0,0) << "  " << (transpose(sinkSN) * start)(0,0) << "  " << (transpose(sinkSN) * sourceSN)(0,0) << endl;
+        // cout << (transpose(sourceSN) * start)(0,0) << "  " << (transpose(sinkSN) * start)(0,0) << "  " << (transpose(sinkSN) * sourceSN)(0,0) << endl;
 
         // Delete everything
-        eigenvectors.clear();
-        tempcorr.clear();
-        tempcorr2.clear();
-        tempcorr3.clear();
-        tempAv.clear();
-        tempmat.clear();
+        // eigenvectors.clear();
+        // tempcorr.clear();
+        // tempcorr2.clear();
+        // tempcorr3.clear();
+        // tempAv.clear();
+        // tempmat.clear();
     }
 
     vector<vector<Double_t> > av(masses.at(0).size(),vector<Double_t>(masses.at(0).at(0).size()));
@@ -659,6 +660,7 @@ Double_t findMassBoot(vector<vector<Double_t> > corr, Int_t nmin, Int_t nmax, Do
             temp.push_back(corr.at(randGen->Integer(N)));
         }
         tempMasses.push_back(findMass(temp, nmin, nmax, massGuess, AGuess, &(tempchi2.at(x))));
+        // cout << tempchi2.at(x) << endl;
         temp.clear();
     }
     Double_t mass = 0;
@@ -702,12 +704,12 @@ TMatrixD weightMatrix(vector<vector<Double_t> > corr){
             for(Int_t z = 0; z < N; z++){
                 covMatrix(x,y) += (corr.at(z).at(x)-av.at(x))*(corr.at(z).at(y)-av.at(y));
             }
-            covMatrix(x,y) = 1.0/((N-1.0)*N)*covMatrix(x,y)*1e20;
+            covMatrix(x,y) = 1.0/((N-1.0)*N)*covMatrix(x,y)*1e25;
         }
     }
 
     TMatrixD inv = covMatrix.Invert();
-    inv *= 1e20;
+    inv *= 1e25;
 
     return inv;
 

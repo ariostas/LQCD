@@ -4,17 +4,17 @@ import math
 import cmath
 import random
 import matplotlib.pyplot as plt
-import fits2 as fits
+import fits
 import multiprocessing
 
 # file_prefix = '/home/arios/Documents/LQCDConfigs/cl3_16_48_b6p1_m0p2450/'
 file_prefix = '/home/arios/Documents/LQCDConfigs/wil_16_64_aniso/'
-threeptfn_file = 'bar3ptfn/{0}_cur3ptfn_{1}_i{2}_g{3}_qx{4}_qy{5}_qz{6}_pfx{7}_pfy{8}_pfz{9}.{10}.{11}.SS'
+threeptfn_file = 'bar3ptfn/{0}_cur3ptfn_{1}_i{2}_g{3}_qx{4}_qy{5}_qz{6}_pfx{7}_pfy{8}_pfz{9}.{10}.{11}.sh_{12}_sh_{13}.SS'
 twoptfn_0_file = 'hadspec/{0}.D{1}.{2}.{3}.sh_{4}_sh_{5}.SS'
-twoptfn_other_file = 'hadspec/{0}_px{1}_py{2}_pz{3}.D{4}.{5}.{6}.SS'
+twoptfn_other_file = 'hadspec/{0}_px{1}_py{2}_pz{3}.D{4}.{5}.{6}.sh_{7}_sh_{8}.SS'
 
 
-def read_file(data_type='2ptfn', m=-8999, sources=['DG1_1'], sinks=['DG1_1'], pf=(0,0,0), q=(1,0,0), g=0, i=0, seqsource='NUCL_U_POL', t_sink=20, current='nonlocal', had='proton'):
+def read_file(data_type='2ptfn', m=-8999, sources=['DG1_1'], sinks=['DG1_1'], pf=(0,0,0), q=(1,0,0), g=0, i=0, seqsource='NUCL_D_POL', t_sink=20, current='nonlocal', had='proton'):
     n_sources = len(sources)
     n_sinks = len(sinks)
     data = np.zeros((1, n_sources*n_sinks, 1), dtype=np.complex128)
@@ -28,9 +28,9 @@ def read_file(data_type='2ptfn', m=-8999, sources=['DG1_1'], sinks=['DG1_1'], pf
             if(data_type == '2ptfn' and pf == (0,0,0)):
                 filename = file_prefix+twoptfn_0_file.format(had, m, sources[x], sinks[y], x, y)
             elif(data_type == '2ptfn'):
-                filename = file_prefix+twoptfn_other_file.format(had, pf[0], pf[1], pf[2], m, sources[x], sinks[y])
+                filename = file_prefix+twoptfn_other_file.format(had, pf[0], pf[1], pf[2], m, sources[x], sinks[y], x, y)
             elif(data_type == '3ptfn'):
-                filename = file_prefix+threeptfn_file.format(current, seqsource, i, g, q[0], q[1], q[2], pf[0], pf[1], pf[2], sources[x], sinks[y])
+                filename = file_prefix+threeptfn_file.format(current, seqsource, i, g, q[0], q[1], q[2], pf[0], pf[1], pf[2], sources[x], sinks[y], x, y)
             else:
                 print('Error: unknown data type')
             f = open(filename, 'r')
@@ -401,7 +401,7 @@ def find_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink, t0, t1):
     n_configs, t_size, mat_size, temp = threeptfn.shape
     n_boot = 50
     n_failed = 0
-    all_ff = np.zeros((n_boot, 4, t_sink+1))
+    all_ff = np.zeros((n_boot, 8, t_sink+1))
     for x in range(0, n_boot):
         if(x < n_boot-1):
             print('Performing form factor bootstrapping... ' + str(math.floor(x/(n_boot-1)*100)) + '%', end='\r')
@@ -421,11 +421,31 @@ def find_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink, t0, t1):
         ##############################
         #### Smeared src and snk #####
         ##############################
-        smeared_src = np.matrix([[1],[0],[0]])
-        smeared_3ptfn_corr = compute_corr(smeared_src, smeared_src, av_3ptfn)
-        smeared_2ptfn_src_corr = compute_corr(smeared_src, smeared_src, av_2ptfn_src)
-        smeared_2ptfn_snk_corr = compute_corr(smeared_src, smeared_src, av_2ptfn_snk)
-        all_ff[x, 0] = compute_ff(smeared_3ptfn_corr, smeared_2ptfn_src_corr, smeared_2ptfn_snk_corr, t_sink)
+        smeared_src1 = np.matrix([[1],[0],[0],[0],[0]])
+        smeared_src2 = np.matrix([[0],[1],[0],[0],[0]])
+        smeared_src3 = np.matrix([[0],[0],[1],[0],[0]])
+        smeared_src4 = np.matrix([[0],[0],[0],[1],[0]])
+        smeared_src5 = np.matrix([[0],[0],[0],[0],[1]])
+        smeared_3ptfn_corr1 = compute_corr(smeared_src1, smeared_src1, av_3ptfn)
+        smeared_3ptfn_corr2 = compute_corr(smeared_src2, smeared_src2, av_3ptfn)
+        smeared_3ptfn_corr3 = compute_corr(smeared_src3, smeared_src3, av_3ptfn)
+        smeared_3ptfn_corr4 = compute_corr(smeared_src4, smeared_src4, av_3ptfn)
+        smeared_3ptfn_corr5 = compute_corr(smeared_src5, smeared_src5, av_3ptfn)
+        smeared_2ptfn_src_corr1 = compute_corr(smeared_src1, smeared_src1, av_2ptfn_src)
+        smeared_2ptfn_src_corr2 = compute_corr(smeared_src2, smeared_src2, av_2ptfn_src)
+        smeared_2ptfn_src_corr3 = compute_corr(smeared_src3, smeared_src3, av_2ptfn_src)
+        smeared_2ptfn_src_corr4 = compute_corr(smeared_src4, smeared_src4, av_2ptfn_src)
+        smeared_2ptfn_src_corr5 = compute_corr(smeared_src5, smeared_src5, av_2ptfn_src)
+        smeared_2ptfn_snk_corr1 = compute_corr(smeared_src1, smeared_src1, av_2ptfn_snk)
+        smeared_2ptfn_snk_corr2 = compute_corr(smeared_src2, smeared_src2, av_2ptfn_snk)
+        smeared_2ptfn_snk_corr3 = compute_corr(smeared_src3, smeared_src3, av_2ptfn_snk)
+        smeared_2ptfn_snk_corr4 = compute_corr(smeared_src4, smeared_src4, av_2ptfn_snk)
+        smeared_2ptfn_snk_corr5 = compute_corr(smeared_src5, smeared_src5, av_2ptfn_snk)
+        all_ff[x, 0] = compute_ff(smeared_3ptfn_corr1, smeared_2ptfn_src_corr1, smeared_2ptfn_snk_corr1, t_sink)
+        all_ff[x, 1] = compute_ff(smeared_3ptfn_corr2, smeared_2ptfn_src_corr2, smeared_2ptfn_snk_corr2, t_sink)
+        all_ff[x, 2] = compute_ff(smeared_3ptfn_corr3, smeared_2ptfn_src_corr3, smeared_2ptfn_snk_corr3, t_sink)
+        all_ff[x, 3] = compute_ff(smeared_3ptfn_corr4, smeared_2ptfn_src_corr4, smeared_2ptfn_snk_corr4, t_sink)
+        all_ff[x, 4] = compute_ff(smeared_3ptfn_corr5, smeared_2ptfn_src_corr5, smeared_2ptfn_snk_corr5, t_sink)
         ##############################
         ## Variational src and snk ###
         ##############################
@@ -436,7 +456,7 @@ def find_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink, t0, t1):
         var_3ptfn_corr = compute_corr(var_src, var_src, av_3ptfn)
         var_2ptfn_src_corr = compute_corr(var_src, var_src, av_2ptfn_src)
         var_2ptfn_snk_corr = compute_corr(var_src, var_src, av_2ptfn_snk)
-        all_ff[x, 1] = compute_ff(var_3ptfn_corr, var_2ptfn_src_corr, var_2ptfn_snk_corr, t_sink)
+        all_ff[x, 5] = compute_ff(var_3ptfn_corr, var_2ptfn_src_corr, var_2ptfn_snk_corr, t_sink)
         ##############################
         #### Var src and S/N snk #####
         ##############################
@@ -444,7 +464,7 @@ def find_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink, t0, t1):
         varsn_3ptfn_corr = compute_corr(var_src, varsn_snk, av_3ptfn)
         varsn_2ptfn_src_corr = compute_corr(var_src, varsn_snk, av_2ptfn_src)
         varsn_2ptfn_snk_corr = compute_corr(var_src, varsn_snk, av_2ptfn_snk)
-        all_ff[x, 2] = compute_ff(varsn_3ptfn_corr, varsn_2ptfn_src_corr, varsn_2ptfn_snk_corr, t_sink)
+        all_ff[x, 6] = compute_ff(varsn_3ptfn_corr, varsn_2ptfn_src_corr, varsn_2ptfn_snk_corr, t_sink)
         ##############################
         ###### S/N src and snk #######
         ##############################
@@ -456,115 +476,116 @@ def find_ff(threeptfn, twoptfn_src, twoptfn_snk, t_sink, t0, t1):
             sn_3ptfn_corr = compute_corr(sn_src, sn_snk, av_3ptfn)
             sn_2ptfn_src_corr = compute_corr(sn_src, sn_snk, av_2ptfn_src)
             sn_2ptfn_snk_corr = compute_corr(sn_src, sn_snk, av_2ptfn_snk)
-            all_ff[x, 3] = compute_ff(sn_3ptfn_corr, sn_2ptfn_src_corr, sn_2ptfn_snk_corr, t_sink)
+            all_ff[x, 7] = compute_ff(sn_3ptfn_corr, sn_2ptfn_src_corr, sn_2ptfn_snk_corr, t_sink)
         ##############################
-    av_ff = np.zeros((4, t_sink+1))
+    av_ff = np.zeros((8, t_sink+1))
     for x in range(0, n_boot):
         av_ff += all_ff[x]
     av_ff /= float(n_boot)
-    av_ff[3] *= float(n_boot)/float(n_boot-n_failed)
-    err_ff = np.zeros((4, t_sink+1))
+    av_ff[7] *= float(n_boot)/float(n_boot-n_failed)
+    err_ff = np.zeros((8, t_sink+1))
     for x in range(0, n_boot):
-        for y in range(4):
+        for y in range(8):
             if(all_ff[x][y][0] != 0 or y != 3):
                 err_ff[y] += (all_ff[x][y]-av_ff[y])**2
     err_ff = (1./float(n_boot)*err_ff)**(1/2)
-    err_ff[3] *= (float(n_boot)/float(n_boot-n_failed))**(1/2)
+    err_ff[7] *= (float(n_boot)/float(n_boot-n_failed))**(1/2)
     return av_ff, err_ff
 
 
 random.seed()
 
 sources = ['DG0_1', 'DG1_1', 'DG1_1', 'DG2_1', 'DG2_1']
+sinks = ['DG0_1', 'DG1_1', 'DG1_1', 'DG2_1', 'DG2_1']
 
 t0 = 0 # time used for generalized eigenvalue problem
 t1 = 6 # time at which variational source is picked, and used for S/N optimization
-t_sink = 14
+t_sink = 16
 
-# rho_3ptfn_x_corr = read_file(data_type='3ptfn', g=1, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0), current='nonlocal')
-# rho_3ptfn_y_corr = read_file(data_type='3ptfn', g=2, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0), current='nonlocal')
-# rho_3ptfn_z_corr = read_file(data_type='3ptfn', g=4, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0), current='nonlocal')
-# rho_3ptfn_t_corr = read_file(data_type='3ptfn', g=8, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0), current='nonlocal')
-# rho_2ptfn_srcp_corr = read_file(data_type='2ptfn', had='proton', pf=(-1,0,0), sources=sources, sinks=sinks)
-rho_2ptfn_snkp_corr = read_file(data_type='2ptfn', had='rho_x', pf=(0,0,0), sources=sources, sinks=sources)
+proton_3ptfn_x_corr = read_file(data_type='3ptfn', g=1, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0), current='nonlocal')
+proton_3ptfn_y_corr = read_file(data_type='3ptfn', g=13, sources=sources, sinks=sinks, q=(0,0,0), pf=(0,0,0), current='nonlocal')
+proton_3ptfn_z_corr = read_file(data_type='3ptfn', g=11, sources=sources, sinks=sinks, q=(0,0,0), pf=(0,0,0), current='nonlocal')
+proton_3ptfn_t_corr = read_file(data_type='3ptfn', g=7, sources=sources, sinks=sinks, q=(0,0,0), pf=(0,0,0), current='nonlocal')
+proton_2ptfn_srcp_corr = read_file(data_type='2ptfn', had='proton', pf=(-1,0,0), sources=sources, sinks=sinks)
+proton_2ptfn_snkp_corr = read_file(data_type='2ptfn', had='proton', pf=(0,0,0), sources=sources, sinks=sinks)
 
-# rho_3ptfn_x_mat = construct_matrices(rho_3ptfn_x_corr)
-# rho_3ptfn_y_mat = construct_matrices(rho_3ptfn_y_corr)
-# rho_3ptfn_z_mat = construct_matrices(rho_3ptfn_z_corr)
-# rho_3ptfn_t_mat = construct_matrices(rho_3ptfn_t_corr)
-# rho_2ptfn_srcp_mat = construct_matrices(rho_2ptfn_srcp_corr)
-rho_2ptfn_snkp_mat = construct_matrices(rho_2ptfn_snkp_corr)
+proton_3ptfn_x_mat = construct_matrices(proton_3ptfn_x_corr)
+proton_3ptfn_y_mat = construct_matrices(proton_3ptfn_y_corr)
+proton_3ptfn_z_mat = construct_matrices(proton_3ptfn_z_corr)
+proton_3ptfn_t_mat = construct_matrices(proton_3ptfn_t_corr)
+proton_2ptfn_srcp_mat = construct_matrices(proton_2ptfn_srcp_corr)
+proton_2ptfn_snkp_mat = construct_matrices(proton_2ptfn_snkp_corr)
 
-# rho_3ptfn_x_mat = make_hermitian(rho_3ptfn_x_mat)
-# rho_3ptfn_y_mat = make_hermitian(rho_3ptfn_y_mat)
-# rho_3ptfn_z_mat = make_hermitian(rho_3ptfn_z_mat)
-# rho_3ptfn_t_mat = make_hermitian(rho_3ptfn_t_mat)
-# rho_2ptfn_srcp_mat = make_hermitian(rho_2ptfn_srcp_mat)
-# rho_2ptfn_snkp_mat = make_hermitian(rho_2ptfn_snkp_mat)
+proton_3ptfn_x_mat = make_hermitian(proton_3ptfn_x_mat)
+proton_3ptfn_y_mat = make_hermitian(proton_3ptfn_y_mat)
+proton_3ptfn_z_mat = make_hermitian(proton_3ptfn_z_mat)
+proton_3ptfn_t_mat = make_hermitian(proton_3ptfn_t_mat)
+proton_2ptfn_srcp_mat = make_hermitian(proton_2ptfn_srcp_mat)
+proton_2ptfn_snkp_mat = make_hermitian(proton_2ptfn_snkp_mat)
 
-# rho_ff_x, rho_fferr_x = find_ff(rho_3ptfn_x_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, t_sink, t0, t1)
-# rho_ff_y, rho_fferr_y = find_ff(rho_3ptfn_y_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, t_sink, t0, t1)
-# rho_ff_z, rho_fferr_z = find_ff(rho_3ptfn_z_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, t_sink, t0, t1)
-# rho_ff_t, rho_fferr_t = find_ff(rho_3ptfn_t_mat, rho_2ptfn_srcp_mat, rho_2ptfn_snkp_mat, t_sink, t0, t1)
+proton_ff_x, proton_fferr_x = find_ff(proton_3ptfn_x_mat, proton_2ptfn_srcp_mat, proton_2ptfn_snkp_mat, t_sink, t0, t1)
+# proton_ff_y, proton_fferr_y = find_ff(proton_3ptfn_y_mat, proton_2ptfn_srcp_mat, proton_2ptfn_snkp_mat, t_sink, t0, t1)
+# proton_ff_z, proton_fferr_z = find_ff(proton_3ptfn_z_mat, proton_2ptfn_srcp_mat, proton_2ptfn_snkp_mat, t_sink, t0, t1)
+# proton_ff_t, proton_fferr_t = find_ff(proton_3ptfn_t_mat, proton_2ptfn_srcp_mat, proton_2ptfn_snkp_mat, t_sink, t0, t1)
+# rho_mass, proton_masserr = find_gnd_masses(rho_2ptfn_snkp_mat, t0, t1)
+
+# smeared_src1 = np.matrix([[1],[0],[0],[0],[0]])
+# smeared_src2 = np.matrix([[0],[1],[0],[0],[0]])
+# smeared_src3 = np.matrix([[0],[0],[1],[0],[0]])
+# smeared_src4 = np.matrix([[0],[0],[0],[1],[0]])
+# smeared_src5 = np.matrix([[0],[0],[0],[0],[1]])
+# corr_src1 = compute_fullcorr(smeared_src1, smeared_src1, rho_2ptfn_snkp_mat)
+# corr_src2 = compute_fullcorr(smeared_src2, smeared_src2, rho_2ptfn_snkp_mat)
+# corr_src3 = compute_fullcorr(smeared_src3, smeared_src3, rho_2ptfn_snkp_mat)
+# corr_src4 = compute_fullcorr(smeared_src4, smeared_src4, rho_2ptfn_snkp_mat)
+# corr_src5 = compute_fullcorr(smeared_src5, smeared_src5, rho_2ptfn_snkp_mat)
+
+# av_2ptfn = average(rho_2ptfn_snkp_mat)
+# temp_evals, temp_evecs = find_eigsys(av_2ptfn, t0)
+# var_src = temp_evecs[0, t1]
+# var_src *= 1.0/cmath.sqrt((np.matrix(var_src).H * np.matrix(var_src))[0,0])
+# corr_var = compute_fullcorr(var_src, var_src, rho_2ptfn_snkp_mat)
+
+# varsn_src = var_src
+# varsn_snk = find_sink(varsn_src, rho_2ptfn_snkp_mat, t1)
+# corr_varsn = compute_fullcorr(varsn_src, varsn_snk, rho_2ptfn_snkp_mat)
+
+# guess = np.matrix([[0],[0],[1]])
+# sn_src, sn_snk = find_opt_sn(guess, guess, rho_2ptfn_snkp_mat, t1)
+# corr_sn = compute_fullcorr(sn_src, sn_snk, rho_2ptfn_snkp_mat)
+
+# masses = np.zeros(8)
+# massesstaterr = np.zeros(8)
+# massessyserr = np.zeros(8)
+# fitrange = np.zeros((8,8))
+
+# results = multiprocessing.Queue()
+
+# threads = []
+# threadnames = ['src1', 'src2', 'src3', 'src4', 'src5', 'var', 'varsn', 'sn']
+# corrs = [corr_src1, corr_src2, corr_src3, corr_src4, corr_src5, corr_var, corr_varsn, corr_sn]
+
+# for x in range(len(threadnames)):
+#     threads.append(multiprocessing.Process(target=fits.scan_fit, args=(corrs[x], [0.0005, 0.5], results, threadnames[x])))
+
+# for x in threads:
+#     x.start()
+
 # rho_mass, rho_masserr = find_gnd_masses(rho_2ptfn_snkp_mat, t0, t1)
 
-smeared_src1 = np.matrix([[1],[0],[0],[0],[0]])
-smeared_src2 = np.matrix([[0],[1],[0],[0],[0]])
-smeared_src3 = np.matrix([[0],[0],[1],[0],[0]])
-smeared_src4 = np.matrix([[0],[0],[0],[1],[0]])
-smeared_src5 = np.matrix([[0],[0],[0],[0],[1]])
-corr_src1 = compute_fullcorr(smeared_src1, smeared_src1, rho_2ptfn_snkp_mat)
-corr_src2 = compute_fullcorr(smeared_src2, smeared_src2, rho_2ptfn_snkp_mat)
-corr_src3 = compute_fullcorr(smeared_src3, smeared_src3, rho_2ptfn_snkp_mat)
-corr_src4 = compute_fullcorr(smeared_src4, smeared_src4, rho_2ptfn_snkp_mat)
-corr_src5 = compute_fullcorr(smeared_src5, smeared_src5, rho_2ptfn_snkp_mat)
+# for x in threads:
+#     x.join()
 
-av_2ptfn = average(rho_2ptfn_snkp_mat)
-temp_evals, temp_evecs = find_eigsys(av_2ptfn, t0)
-var_src = temp_evecs[0, t1]
-var_src *= 1.0/cmath.sqrt((np.matrix(var_src).H * np.matrix(var_src))[0,0])
-corr_var = compute_fullcorr(var_src, var_src, rho_2ptfn_snkp_mat)
-
-varsn_src = var_src
-varsn_snk = find_sink(varsn_src, rho_2ptfn_snkp_mat, t1)
-corr_varsn = compute_fullcorr(varsn_src, varsn_snk, rho_2ptfn_snkp_mat)
-
-guess = np.matrix([[0],[0],[1]])
-sn_src, sn_snk = find_opt_sn(guess, guess, rho_2ptfn_snkp_mat, t1)
-corr_sn = compute_fullcorr(sn_src, sn_snk, rho_2ptfn_snkp_mat)
-
-masses = np.zeros(8)
-massesstaterr = np.zeros(8)
-massessyserr = np.zeros(8)
-fitrange = np.zeros((8,8))
-
-results = multiprocessing.Queue()
-
-threads = []
-threadnames = ['src1', 'src2', 'src3', 'src4', 'src5', 'var', 'varsn', 'sn']
-corrs = [corr_src1, corr_src2, corr_src3, corr_src4, corr_src5, corr_var, corr_varsn, corr_sn]
-
-for x in range(len(threadnames)):
-    threads.append(multiprocessing.Process(target=fits.scan_fit, args=(corrs[x], [0.0005, 0.5], results, threadnames[x])))
-
-for x in threads:
-    x.start()
-
-rho_mass, rho_masserr = find_gnd_masses(rho_2ptfn_snkp_mat, t0, t1)
-
-for x in threads:
-    x.join()
-
-for x in range(len(threadnames)):
-    l = results.get()
-    for y in range(len(threadnames)):
-        if(l[0] == threadnames[y]):
-            name, masses[y], massesstaterr[y], massessyserr[y], fitrange[y][0], fitrange[y][1] = l
-            break
+# for x in range(len(threadnames)):
+#     l = results.get()
+#     for y in range(len(threadnames)):
+#         if(l[0] == threadnames[y]):
+#             name, masses[y], massesstaterr[y], massessyserr[y], fitrange[y][0], fitrange[y][1] = l
+#             break
 
 
-for x in range(8):
-    print(threadnames[x]+': Mass = '+str(masses[x])+' +- '+str(massesstaterr[x])+' (stat) +- '+str(massessyserr[x])+' (sys)')
+# for x in range(8):
+#     print(threadnames[x]+': Mass = '+str(masses[x])+' +- '+str(massesstaterr[x])+' (stat) +- '+str(massessyserr[x])+' (sys)')
 
 # masses[5], masseserr[5], fitrange[5][0], fitrange[5][1] = async_result1.get()
 # masses[6], masseserr[6], fitrange[6][0], fitrange[6][1] = async_result2.get()
@@ -585,43 +606,43 @@ for x in range(8):
 # print('Mass = '+str(res[1])+' +- '+str(err))
 # fits.scan_fit(corr, [0.0005, 0.5])
 
-# rho_ff = [rho_ff_x, rho_ff_y, rho_ff_z, rho_ff_t]
-# rho_fferr = [rho_fferr_x, rho_fferr_y, rho_fferr_z, rho_fferr_t]
+# proton_ff = [proton_ff_x, proton_ff_y, proton_ff_z, proton_ff_t]
+# proton_fferr = [proton_fferr_x, proton_fferr_y, proton_fferr_z, proton_fferr_t]
 labels = ['x', 'y', 'z', 't']
-xlab = np.arange(0, 32, 1)
+xlab = np.arange(0, t_sink+1, 1)
 
 
 
 type_labels = ['Point', '$G1$', '$\\nabla^2 G1$', '$G2$', '$\\nabla^2 G2$', 'Var', 'Var + S/N', 'S/N']
-plt.figure(1, figsize=(16, 12))
-for x in range(5):
-    plt.subplot(511+x)
-    plt.errorbar(xlab, np.resize(rho_mass[x], 32), yerr=np.resize(rho_masserr[x], 32), color='b', ecolor='b', fmt='o', capsize=2)
-    plt.ylabel('$m_{eff}$', fontsize=16)
-    plt.xlabel('$ \Delta t $ (%s)'  % type_labels[x], fontsize=16)
-    plt.xlim(-0.5, 31.5)
-    # plt.yscale('log', nonposy='clip')
-    plt.ylim(0, 2)
-    xp = np.linspace(fitrange[x][0], fitrange[x][1], 100)
-    yp = np.zeros(len(xp))
-    for i in range(len(xp)):
-        yp[i] = masses[x]
-    plt.plot(xp, yp, color='r')
+# plt.figure(1, figsize=(16, 12))
+# for x in range(5):
+#     plt.subplot(511+x)
+#     plt.errorbar(xlab, np.resize(rho_mass[x], 32), yerr=np.resize(rho_masserr[x], 32), color='b', ecolor='b', fmt='o', capsize=2)
+#     plt.ylabel('$m_{eff}$', fontsize=16)
+#     plt.xlabel('$ \Delta t $ (%s)'  % type_labels[x], fontsize=16)
+#     plt.xlim(-0.5, 31.5)
+#     # plt.yscale('log', nonposy='clip')
+#     plt.ylim(0, 2)
+#     xp = np.linspace(fitrange[x][0], fitrange[x][1], 100)
+#     yp = np.zeros(len(xp))
+#     for i in range(len(xp)):
+#         yp[i] = masses[x]
+#     plt.plot(xp, yp, color='r')
 
-plt.figure(2, figsize=(16, 12))
-for x in range(3):
-    plt.subplot(311+x)
-    plt.errorbar(xlab, np.resize(rho_mass[x+5], 32), yerr=np.resize(rho_masserr[x+5], 32), color='b', ecolor='b', fmt='o', capsize=2)
-    plt.ylabel('$m_{eff}$', fontsize=16)
-    plt.xlabel('$ \Delta t $ (%s)'  % type_labels[x+5], fontsize=16)
-    plt.xlim(-0.5, 31.5)
-    # plt.yscale('log', nonposy='clip')
-    plt.ylim(0, 2)
-    xp = np.linspace(fitrange[x+5][0], fitrange[x+5][1], 100)
-    yp = np.zeros(len(xp))
-    for i in range(len(xp)):
-        yp[i] = masses[x+5]
-    plt.plot(xp, yp, color='r')
+# plt.figure(2, figsize=(16, 12))
+# for x in range(3):
+#     plt.subplot(311+x)
+#     plt.errorbar(xlab, np.resize(rho_mass[x+5], 32), yerr=np.resize(rho_masserr[x+5], 32), color='b', ecolor='b', fmt='o', capsize=2)
+#     plt.ylabel('$m_{eff}$', fontsize=16)
+#     plt.xlabel('$ \Delta t $ (%s)'  % type_labels[x+5], fontsize=16)
+#     plt.xlim(-0.5, 31.5)
+#     # plt.yscale('log', nonposy='clip')
+#     plt.ylim(0, 2)
+#     xp = np.linspace(fitrange[x+5][0], fitrange[x+5][1], 100)
+#     yp = np.zeros(len(xp))
+#     for i in range(len(xp)):
+#         yp[i] = masses[x+5]
+#     plt.plot(xp, yp, color='r')
 
 # plt.figure(2, figsize=(15, 12))
 # for x in range(3,6):
@@ -630,6 +651,29 @@ for x in range(3):
 #     plt.ylabel('$m_{eff}$ (%s)' % type_labels[x], fontsize=16)
 #     plt.xlabel('$ \Delta t $', fontsize=16)
 #     plt.xlim(-0.5, 31.5)
+
+plt.figure(1, figsize=(16, 12))
+for x in range(5):
+    plt.subplot(511+x)
+    plt.errorbar(xlab, proton_ff_x[x], yerr=proton_fferr_x[x], color='b', ecolor='b', fmt='o', capsize=2)
+    plt.ylabel('FF', fontsize=16)
+    plt.xlabel('$ \Delta t $ (%s)'  % type_labels[x], fontsize=16)
+    # plt.xlim(-0.5, 31.5)
+    # plt.yscale('log', nonposy='clip')
+    # plt.ylim(0, 2)
+    # xp = np.linspace(fitrange[x+5][0], fitrange[x+5][1], 100)
+    # yp = np.zeros(len(xp))
+    # for i in range(len(xp)):
+    #     yp[i] = masses[x+5]
+    # plt.plot(xp, yp, color='r')
+
+plt.figure(2, figsize=(16, 12))
+for x in range(5,8):
+    plt.subplot(311+x-5)
+    plt.errorbar(xlab, proton_ff_x[x], yerr=proton_fferr_x[x], color='b', ecolor='b', fmt='^', capsize=2)
+    plt.ylabel('$m_{eff}$ (%s)' % type_labels[x], fontsize=16)
+    plt.xlabel('$ \Delta t $', fontsize=16)
+    # plt.xlim(-0.5, 31.5)
 
 plt.show()
 

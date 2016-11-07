@@ -235,7 +235,7 @@ def compute_corr(source, sink, mat):
 def find_gnd_masses(corr, mat):
     n_configs, n_types, t_size = corr.shape
     n_configs, t_size, mat_size, temp = mat.shape
-    n_boot = 50
+    n_boot = 100
     masses = np.zeros((n_boot, 4, t_size))
     # av_corr = average(corr)
     # temp_mat = make_matrices(av_corr)
@@ -308,4 +308,31 @@ plt.ylabel('$m_{eff}$', fontsize=16)
 plt.xlabel('$ \Delta t $', fontsize=16)
 plt.axis([-1, 65, 0.1, 0.35])
 plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode='expand', borderaxespad=0.)
+
+type_labels = ['Var', 'Var+S/N', 'S/N']
+colors = ['r', 'b', 'g']
+markers = ['^', 's', 'o']
+plt.figure(2, figsize=(10, 7))
+for x in range(3):
+    ax = plt.subplot(311+x)
+    plt.errorbar(xlab, np.resize(mass[x+1], 64), yerr=np.resize(err[x+1], 64), color=colors[x], ecolor=colors[x], fmt=markers[x], capsize=2)
+    plt.ylabel('$m_{eff}$', fontsize=20)
+    # plt.xlabel('$ \Delta t $ (%s)'  % type_labels[x], fontsize=16)
+    plt.text(0.45, 0.82, type_labels[x], transform=ax.transAxes, fontsize=20)
+    plt.xlim(-0.5, 64.5)
+    plt.ylim(0, 0.8)
+    for tick in ax.yaxis.get_major_ticks():
+                tick.label.set_fontsize(16)
+    start, end = ax.get_ylim()
+    ax.yaxis.set_ticks(np.arange(start, end, 0.2))
+    if(x == 2):
+        for tick in ax.xaxis.get_major_ticks():
+                tick.label.set_fontsize(16)
+        plt.xlabel('$ \Delta t $', fontsize=20)
+    else:
+        ax.set_xticklabels( () )
+    if(x == 0):
+        plt.suptitle('Proton (paper cfgs)', fontsize=30)
+plt.subplots_adjust(left=0.08, right=0.97, top=0.92, bottom=0.10, wspace=0.22, hspace=0.12)
+
 plt.show()

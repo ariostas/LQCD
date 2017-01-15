@@ -20,8 +20,8 @@ t0 = 0 # time used for generalized eigenvalue problem # t = 0 for both proton an
 t1 = 18 # time at which variational source is picked, and used for S/N optimization # t = 18 for proton and t = 10 for rho
 t_sink = 16 # sink time (for 3ptfns)
 
-proton_3ptfn_t_corr = lqcdfunc.read_file(data_type='3ptfn', g=8, sources=sources, sinks=sinks, q=(1,0,0), pf=(0,0,0), current='nonlocal', file_prefix=file_prefix)
-proton_2ptfn_srcp_corr = lqcdfunc.read_file(data_type='2ptfn', had='proton', pf=(-1,0,0), sources=sources, sinks=sinks, file_prefix=file_prefix)
+proton_3ptfn_t_corr = lqcdfunc.read_file(data_type='3ptfn', seqsource='NUCL_D_UNPOL', g=7, sources=sources, sinks=sinks, q=(0,0,0), pf=(0,0,0), current='nonlocal', file_prefix=file_prefix)
+proton_2ptfn_srcp_corr = lqcdfunc.read_file(data_type='2ptfn', had='proton', pf=(0,0,0), sources=sources, sinks=sinks, file_prefix=file_prefix)
 proton_2ptfn_snkp_corr = lqcdfunc.read_file(data_type='2ptfn', had='proton', pf=(0,0,0), sources=sources, sinks=sinks, file_prefix=file_prefix)
 
 proton_3ptfn_t_mat = lqcdfunc.construct_matrices(proton_3ptfn_t_corr)
@@ -76,7 +76,7 @@ for x in range(3):
     else:
         ax.set_xticklabels( () )
     if(x == 0):
-        plt.suptitle('Rho', fontsize=30)
+        plt.suptitle('Proton', fontsize=30)
 plt.subplots_adjust(left=0.08, right=0.97, top=0.92, bottom=0.10, wspace=0.22, hspace=0.12)
 
 
@@ -87,7 +87,7 @@ for x in range(3):
     plt.ylabel('$R$', fontsize=20)
     plt.text(0.45, 0.82, type_labels[x], transform=ax.transAxes, fontsize=20)
     plt.xlim(-0.5, t_sink+0.5)
-    plt.ylim(0.5, 1.0)
+    plt.ylim(0.0, 0.3)
     for tick in ax.yaxis.get_major_ticks():
                 tick.label.set_fontsize(16)
     start, end = ax.get_ylim()
@@ -99,9 +99,33 @@ for x in range(3):
     else:
         ax.set_xticklabels( () )
     if(x == 0):
-        plt.suptitle('Proton ($\gamma_5$-current)', fontsize=30)
+        plt.suptitle('Proton ($\gamma_{4}\gamma_{5}$ charge)', fontsize=30)
 plt.subplots_adjust(left=0.08, right=0.97, top=0.92, bottom=0.10, wspace=0.22, hspace=0.12)
 
+type_labels = ['Point', '$G1$', '$\\nabla^2 G1$', '$G2$', '$\\nabla^2 G2$', 'Var', 'Var + S/N', 'S/N']
+colors = ['c', 'b', 'g', 'k', 'm', 'r']
+markers = ['^', 's', 'o', '8', 'p', '*']
+plt.figure(4, figsize=(10, 10))
+for x in range(5):
+    ax = plt.subplot(511+x)
+    plt.errorbar(np.resize(xlab, t_sink), np.resize(proton_ff_t[x], t_sink), yerr=np.resize(proton_fferr_t[x], t_sink), color='b', ecolor='b', fmt='o', capsize=2)
+    plt.ylabel('$R$', fontsize=20)
+    plt.text(0.45, 0.82, type_labels[x], transform=ax.transAxes, fontsize=20)
+    plt.xlim(-0.5, t_sink+0.5)
+    # plt.ylim(0.0, 0.25)
+    for tick in ax.yaxis.get_major_ticks():
+                tick.label.set_fontsize(16)
+    start, end = ax.get_ylim()
+    ax.yaxis.set_ticks(np.arange(start, end, 0.1))
+    if(x == 4):
+        for tick in ax.xaxis.get_major_ticks():
+                tick.label.set_fontsize(16)
+        plt.xlabel('$ \\tau $', fontsize=20)
+    else:
+        ax.set_xticklabels( () )
+    if(x == 0):
+        plt.suptitle('Proton axial charge', fontsize=30)
+plt.subplots_adjust(left=0.08, right=0.97, top=0.92, bottom=0.10, wspace=0.22, hspace=0.12)
 
 plt.show()
 

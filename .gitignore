@@ -32,7 +32,6 @@
 ##PYTHON
 *.pyc
 __init__.py
-temp*
 
 ## Images
 *.jpg
@@ -50,3 +49,13 @@ temp*
 *.SP
 *.SS
 *.dat
+
+# XML inputs/outputs
+*.ini.xml
+*.out.xml
+
+# Data
+*.dat
+
+# Temporary files
+temp*

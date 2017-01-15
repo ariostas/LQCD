@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<purgaug> 
+  <Cfg>
+    <cfg_type>WEAK_FIELD</cfg_type>
+    <cfg_file>dummy</cfg_file>
+  </Cfg>
+
+  <MCControl>
+    <RNG>
+      <Seed>	
+        <elem>1</elem>
+        <elem>2</elem>
+        <elem>3</elem>
+        <elem>4</elem>
+      </Seed>
+    </RNG>
+
+    <StartUpdateNum>0</StartUpdateNum>
+    <NWarmUpUpdates>1000</NWarmUpUpdates>  
+    <NProductionUpdates>25000</NProductionUpdates>
+    <NUpdatesThisRun>25000</NUpdatesThisRun>
+    <SaveInterval>50</SaveInterval>
+    <SavePrefix>su3_16_60_beta_5p8</SavePrefix>
+    <SaveVolfmt>SINGLEFILE</SaveVolfmt>
+  </MCControl>
+
+  <HBItr>
+    <GaugeAction>
+       <Name>WILSON_GAUGEACT</Name>
+       <beta>5.8</beta>
+       <AnisoParam>
+         <anisoP>true</anisoP>
+         <t_dir>3</t_dir>
+         <xi_0>2.0</xi_0>
+         <nu>2.0</nu>
+       </AnisoParam>
+       <GaugeState>
+         <Name>SIMPLE_GAUGE_STATE</Name>
+         <GaugeBC>
+           <Name>PERIODIC_GAUGEBC</Name>
+         </GaugeBC>
+       </GaugeState>
+    </GaugeAction>
+    <HBParams>
+      <nOver>3</nOver>
+      <NmaxHB>1</NmaxHB>
+    </HBParams>
+    <nrow>16 16 16 60</nrow>
+  </HBItr>
+
+</purgaug>
+
+

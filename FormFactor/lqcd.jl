@@ -1,7 +1,9 @@
 module lqcd
 using ProgressMeter
 
-export read_hadspec_file, read_bar3ptfn_file, make_hermitian!, find_ff_with2ptfn
+export average, compute_corr, compute_corrs, read_hadspec_file, read_bar3ptfn_file, make_hermitian!, find_ff_with2ptfn, find_mass_and_ff,
+       find_eigsys, find_sn_sink, find_opt_sn
+
 
 function read_hadspec_file(had::String, m::String, pf::Tuple{Int64,Int64,Int64}, sources::Array{String,1}, sinks::Array{String,1}, file_prefix::String)
     n_sources::Int64 = length(sources)
@@ -95,6 +97,15 @@ function average(data::Array{Float64,3})
     av_data::Array{Float64,2} = zeros(Float64, size(data, 2), size(data, 3))
     for x::Int64 in 1:n_tot
         av_data += data[x,:,:]
+    end
+    av_data /= Float64(n_tot)
+    return av_data
+end
+function average(data::Array{Float64,2})
+    n_tot::Int64 = size(data, 1)
+    av_data::Array{Float64,1} = zeros(Float64, size(data, 2))
+    for x::Int64 in 1:n_tot
+        av_data += data[x,:]
     end
     av_data /= Float64(n_tot)
     return av_data
@@ -262,9 +273,42 @@ function compute_corr(source::Array{Complex{Float64},1}, sink::Array{Complex{Flo
     n_sinks::Int64 = size(mat, 3)
     corr::Array{Complex{Float64},1} = zeros(Complex{Float64}, t_size)
     for x::Int64 in 1:t_size
-        corr[x] = (reshape(sink, n_sinks, 1)' * mat[x,:,:] * reshape(source, n_sources, 1))[1,1]
+        corr[x] = (reshape(sink, 1, n_sinks) * mat[x,:,:] * reshape(source, n_sources, 1))[1,1]
     end
     return corr
+end
+
+
+function compute_corrs(source::Array{Complex{Float64},1}, sink::Array{Complex{Float64},1}, mat::Array{Complex{Float64},4})
+    n_configs::Int64 = size(mat, 1)
+    t_size::Int64 = size(mat, 2)
+    n_sources::Int64 = size(mat, 3)
+    n_sinks::Int64 = size(mat, 4)
+    corr::Array{Complex{Float64},2} = zeros(Complex{Float64}, n_configs, t_size)
+    for n::Int64 in 1:n_configs
+        for x::Int64 in 1:t_size
+            corr[n,x] = (reshape(sink, 1, n_sinks) * mat[n,x,:,:] * reshape(source, n_sources, 1))[1,1]
+        end
+    end
+    return corr
+end
+
+
+function eff_masses(corr::Array{Complex{Float64},1})
+    t_size::Int64 = size(corr, 1)
+    masses::Array{Float64,1} = zeros(Float64, t_size)
+    for x::Int64 in 1:t_size
+        r::Float64 = real(corr[x])/real(corr[mod(x,t_size)+1])
+        m::Float64 = 0.
+        if r > 0.
+            m = log(r)
+        end
+        if x > t_size/2
+            m = -m
+        end
+        masses[x] = m
+    end
+    return masses
 end
 
 
@@ -368,7 +412,103 @@ function find_ff_with2ptfn(threeptfn::Array{Complex{Float64},4}, twoptfn_src::Ar
     if n_failed != n_boot
         err_ff[8,:] *= sqrt(Float64(n_boot)/Float64(n_boot-n_failed))
     end
-    return av_ff, err_ff, all_ff
+    return av_ff, err_ff
+end
+
+
+function find_mass_and_ff(threeptfn::Array{Complex{Float64},4}, twoptfn_src::Array{Complex{Float64},4}, twoptfn_snk::Array{Complex{Float64},4}, t_sink::Int64, t_gen_ev::Int64, t_var::Int64, t_sn::Int64; n_boot::Int64 = 100)
+    p = Progress(n_boot, 0.5, "Performing bootstrapping...   ", 50)
+    n_configs::Int64 = size(threeptfn, 1)
+    t_size::Int64 = size(threeptfn, 2)
+    n_sources::Int64 = size(threeptfn, 3)
+    n_sinks::Int64 = size(threeptfn, 4)
+    n_failed::Int64 = 0
+    temp_rnd_conf::Array{Int64,1} = []
+    all_ff::Array{Float64,3} = zeros(Float64, n_boot, 8, t_sink+1)
+    all_masses::Array{Float64,3} = zeros(Float64, n_boot, 8, t_size)
+    if n_sources != n_sinks
+        println("Error: Matrix is not square")
+    end
+    for n::Int64 in 1:n_boot
+        #if n == n_boot
+        #    println("\rPerforming bootstrapping for charge/form factor... \033[1;32mdone\033[0m")
+        #else
+        #    print("\rPerforming bootstrapping for charge/form factor... ", Int64(floor(n/n_boot*100)), "%")
+        #end
+        temp_3ptfn::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_2ptfn_src::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_2ptfn_snk::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_rnd_conf = rand(1:n_configs, n_configs)
+        for i::Int64 in 1:n_configs
+            temp_3ptfn[i,:,:,:] = threeptfn[temp_rnd_conf[i],:,:,:]
+            temp_2ptfn_src[i,:,:,:] = twoptfn_src[temp_rnd_conf[i],:,:,:]
+            temp_2ptfn_snk[i,:,:,:] = twoptfn_snk[temp_rnd_conf[i],:,:,:]
+        end
+        av_3ptfn::Array{Complex{Float64},3} = average(temp_3ptfn)
+        av_2ptfn_src::Array{Complex{Float64},3} = average(temp_2ptfn_src)
+        av_2ptfn_snk::Array{Complex{Float64},3} = average(temp_2ptfn_snk)
+
+        ## Smeared src and snk ##
+        id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
+        for s::Int64 in 1:n_sources
+            smeared_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_3ptfn)
+            smeared_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_2ptfn_src)
+            smeared_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_2ptfn_snk)
+            all_ff[n, s, :] = compute_ff_complex(smeared_3ptfn_corr, smeared_2ptfn_src_corr, smeared_2ptfn_snk_corr, t_sink)
+            all_masses[n, s, :] = eff_masses(smeared_2ptfn_snk_corr)
+        end
+
+        ## Variational src and snk ##
+        evals::Array{Complex{Float64},2}, evecs::Array{Complex{Float64},3} = find_eigsys(av_2ptfn_snk, t_gen_ev)
+        var_src::Array{Complex{Float64},1} = evecs[t_var+1,:,1]
+        var_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_3ptfn)
+        var_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_2ptfn_src)
+        var_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_2ptfn_snk)
+        all_ff[n, 6, :] = compute_ff_complex(var_3ptfn_corr, var_2ptfn_src_corr, var_2ptfn_snk_corr, t_sink)
+        all_masses[n, 6, :] = eff_masses(var_2ptfn_snk_corr)
+
+        ## Var source and S/N sink ##
+        varsn_snk::Array{Complex{Float64},1} = find_sn_sink(var_src, temp_2ptfn_snk, t_sn)
+        varsn_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_3ptfn)
+        varsn_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_2ptfn_src)
+        varsn_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_2ptfn_snk)
+        all_ff[n, 7, :] = compute_ff_complex(varsn_3ptfn_corr, varsn_2ptfn_src_corr, varsn_2ptfn_snk_corr, t_sink)
+        all_masses[n, 7, :] = eff_masses(varsn_2ptfn_snk_corr)
+
+        ## S/N source and sink ##
+        sn_src::Array{Complex{Float64},1}, sn_snk::Array{Complex{Float64},1} = find_opt_sn(temp_2ptfn_snk, t_sn)
+        if sn_src == zeros(Complex{Float64}, n_sources)
+            n_failed += 1
+        else
+            sn_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(sn_src, sn_snk, av_2ptfn_src)
+            sn_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(sn_src, sn_snk, av_2ptfn_snk)
+            sn_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(sn_src, sn_snk, av_3ptfn)
+            all_ff[n, 8, :] = compute_ff_complex(sn_3ptfn_corr, sn_2ptfn_src_corr, sn_2ptfn_snk_corr, t_sink)
+            all_masses[n, 8, :] = eff_masses(sn_2ptfn_snk_corr)
+        end
+
+        ## update progress bar ##
+        update!(p, n)
+    end
+    av_ff::Array{Float64,2} = average(all_ff)
+    av_masses::Array{Float64,2} = average(all_masses)
+    if n_failed != n_boot
+        av_ff[8,:] *= Float64(n_boot)/Float64(n_boot-n_failed)
+        av_masses[8,:] *= Float64(n_boot)/Float64(n_boot-n_failed)
+    end
+    err_ff::Array{Float64,2} = zeros(Float64, 8, t_sink+1)
+    err_masses::Array{Float64,2} = zeros(Float64, 8, t_size)
+    for n::Int64 in 1:n_boot
+        err_ff += (all_ff[n, :, :]-av_ff).^2
+        err_masses += (all_masses[n, :, :]-av_masses).^2
+    end
+    err_ff = sqrt(err_ff/Float64(n_boot))
+    err_masses = sqrt(err_masses/Float64(n_boot))
+    if n_failed != n_boot
+        err_ff[8,:] *= sqrt(Float64(n_boot)/Float64(n_boot-n_failed))
+        err_masses[8,:] *= sqrt(Float64(n_boot)/Float64(n_boot-n_failed))
+    end
+    return av_masses, err_masses, av_ff, err_ff
 end
 
 

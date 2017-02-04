@@ -9,12 +9,12 @@ end
 
 
 function cosh_func(t::Int64, Nt::Int64, par::Array{Float64,1})
-    return par[1]*cosh((t-Nt/2.)*par[2])
+    return par[1]*cosh((t-1-Nt/2.)*par[2])
 end
 
 
 function sinh_func(t::Int64, Nt::Int64, par::Array{Float64,1})
-    return par[1]*sinh((t-Nt/2.)*par[2])
+    return par[1]*sinh((t-1-Nt/2.)*par[2])
 end
 
 
@@ -26,7 +26,7 @@ end
 function weight_mat(corr::Array{Float64,2})
     n_configs::Int64 = size(corr, 1)
     Nt::Int64 = size(corr, 2)
-    av_corr::Array{Float64,1} = average(corr)
+    av_corr::Array{Float64,1} = mean(corr,1)[1,:]
     cov_mat::Array{Float64,2} = zeros(Float64, Nt, Nt)
     for x::Int64 in 1:Nt
         for y::Int64 in 1:Nt
@@ -38,6 +38,11 @@ function weight_mat(corr::Array{Float64,2})
     cov_mat /= Float64(n_configs*(n_configs-1))
     w_mat::Array{Float64,2} = inv(cov_mat)
     return w_mat
+end
+
+
+function weight_mat_3ptfn(corr::Array{Float64,2})
+    return weight_mat(corr::Array{Float64,2})
 end
 
 
@@ -66,7 +71,7 @@ function fit_corr(corr::Array{Float64,2}, nmin::Int64, nmax::Int64, par_guess::A
         println("Error: Function type not defined, using const")
         fit_func = const_func
     end
-    av_corr::Array{Float64,1} = average(corr)
+    av_corr::Array{Float64,1} = mean(corr,1)[1,:]
     Nt::Int64 = size(av_corr, 1)
     w_mat::Array{Float64,2} = weight_mat(corr)
     function tmp_function(par)
@@ -79,9 +84,9 @@ function fit_corr(corr::Array{Float64,2}, nmin::Int64, nmax::Int64, par_guess::A
     end
     if Optim.converged(res)
         #println("\033[1;32mMinimization succeeded\033[0m")
-        #println(Optim.minimum(res))
+        #println(Optim.minimizer(res))
     else
-        print("\033[1;31mMinimization failed\033[0m")
+        print("\033[1;31mMinimization failed\033[0m\n\n")
     end
     return Optim.minimizer(res), Optim.minimum(res)
 end
@@ -126,7 +131,7 @@ function find_2ptcorr_wmat(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, 
     if n_sources != n_sinks
         println("Error: Matrix is not square")
     end
-    av_2ptfn::Array{Complex{Float64},3} = average(temp_2ptfn)
+    av_2ptfn::Array{Complex{Float64},3} = mean(temp_2ptfn,1)[1,:,:,:]
 
     ## Smeared src and snk ##
     id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
@@ -153,7 +158,7 @@ function find_2ptcorr_wmat(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, 
 end
 
 
-function scan_range_2ptfn(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t_var::Int64, t_sn::Int64, par_guess::Array{Float64,1}; nmin::Int64=10, nmax::Int64=17, func::String="exp")
+function scan_range_2ptfn(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t_var::Int64, t_sn::Int64, par_guess::Array{Float64,1}; nmin::Int64=10, nmax::Int64=17, func::String="exp", hide_prog::Bool = false)
     n_configs::Int64 = size(twoptfn, 1)
     t_size::Int64 = size(twoptfn, 2)
     n_sources::Int64 = size(twoptfn, 3)
@@ -163,7 +168,7 @@ function scan_range_2ptfn(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t
     if n_sources != n_sinks
         println("Error: Matrix is not square")
     end
-    av_2ptfn::Array{Complex{Float64},3} = average(twoptfn)
+    av_2ptfn::Array{Complex{Float64},3} = mean(twoptfn,1)[1,:,:,:]
 
     ## Smeared src and snk ##
     id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
@@ -193,7 +198,9 @@ function scan_range_2ptfn(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t
     limits::Array{Int64,2} = zeros(Int64,8,2)
     mass_sys_err::Array{Float64,1} = zeros(Float64,8)
     mass_sys::Array{Float64,1} = zeros(Float64,8)
-    p = Progress(8, 1, "Scanning fit range...         ", 50)
+    if !hide_prog
+        p = Progress(8, 1, "Scanning fit range...         ", 50)
+    end
     for i::Int64 in 1:8
         n_low::Array{Int64,1} = zeros(Int64,0)
         n_high::Array{Int64,1} = zeros(Int64,0)
@@ -216,10 +223,10 @@ function scan_range_2ptfn(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t
             end
         end
 
-        n_min::Int64 = 0
-        n_max::Int64 = 0
+        n_min::Int64 = t_size-1
+        n_max::Int64 = 2
         for x::Int64 in 1:length(n_low)
-            if chi_low[x] < 3
+            if chi_low[x] < 3 && n_low[x] > 1
                 n_min = n_low[x]
             end
         end
@@ -249,14 +256,131 @@ function scan_range_2ptfn(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t
         std_mass = sqrt(std_mass)/9.
         mass_sys_err[i] = std_mass
 
-        update!(p, i)
+        if !hide_prog
+            update!(p, i)
+        end
     end
     return limits, mass_sys, mass_sys_err
 end
 
 
-function find_mass_fit(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t_var::Int64, t_sn::Int64, limits::Array{Int64,2}, par_guess::Array{Float64,1}; func::String="exp", n_boot::Int64 = 100)
-    p = Progress(n_boot, 0.5, "Performing bootstrapping...   ", 50)
+function scan_range_3ptfn(threeptfn::Array{Complex{Float64},4}, twoptfn_src::Array{Complex{Float64},4}, twoptfn_snk::Array{Complex{Float64},4}, t_sink::Int64, t_gen_ev::Int64, t_var::Int64, t_sn::Int64, par_guess::Array{Float64,1}; nmin::Int64=10, nmax::Int64=17, func::String="exp")
+    n_configs::Int64 = size(threeptfn, 1)
+    t_size::Int64 = size(threeptfn, 2)
+    n_sources::Int64 = size(threeptfn, 3)
+    n_sinks::Int64 = size(threeptfn, 4)
+    w_mats::Array{Float64,3} = zeros(Float64, 8, t_size, t_size)
+    av_ff::Array{Float64,2} = zeros(Float64, 8, t_sink+1)
+    if n_sources != n_sinks
+        println("Error: Matrix is not square")
+    end
+    av_3ptfn::Array{Complex{Float64},3} = mean(threeptfn,1)[1,:,:,:]
+    av_2ptfn_src::Array{Complex{Float64},3} = mean(twoptfn_src,1)[1,:,:,:]
+    av_2ptfn_snk::Array{Complex{Float64},3} = mean(twoptfn_snk,1)[1,:,:,:]
+
+    ## Smeared src and snk ##
+    id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
+    for s::Int64 in 1:n_sources
+        w_mats[s, :, :] = weight_mat_3ptfn(real(compute_corrs(id_matrix[:,s], id_matrix[:,s], twoptfn)))
+        smeared_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_3ptfn)
+        smeared_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_2ptfn_src)
+        smeared_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_2ptfn_snk)
+        av_ff[s,:] = compute_ff_complex(smeared_3ptfn_corr, smeared_2ptfn_src_corr, smeared_2ptfn_snk_corr, t_sink)
+    end
+
+    ## Variational src and snk ##
+    evals::Array{Complex{Float64},2}, evecs::Array{Complex{Float64},3} = find_eigsys(av_2ptfn_snk, t_gen_ev)
+    var_src::Array{Complex{Float64},1} = evecs[t_var+1,:,1]
+    var_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_3ptfn)
+    var_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_2ptfn_src)
+    var_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_2ptfn_snk)
+    w_mats[6, :, :] = weight_mat_3ptfn(real(compute_corrs(var_src, var_src, twoptfn)))
+    av_ff[6,:] = compute_ff_complex(var_3ptfn_corr, var_2ptfn_src_corr, var_2ptfn_snk_corr, t_sink)
+
+    ## Var source and S/N sink ##
+    varsn_snk::Array{Complex{Float64},1} = find_sn_sink(var_src, temp_2ptfn_snk, t_sn)
+    varsn_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_3ptfn)
+    varsn_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_2ptfn_src)
+    varsn_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_2ptfn_snk)
+    w_mats[7, :, :] = weight_mat_3ptfn(real(compute_corrs(var_src, varsn_snk, twoptfn)))
+    av_ff[7,:] = compute_ff_complex(varsn_3ptfn_corr, varsn_2ptfn_src_corr, varsn_2ptfn_snk_corr, t_sink)
+
+    ## S/N source and sink ##
+    sn_src::Array{Complex{Float64},1}, sn_snk::Array{Complex{Float64},1} = find_opt_sn(temp_2ptfn_snk, t_sn)
+    if sn_src != zeros(Complex{Float64}, n_sources, 1)
+        w_mats[8, :, :] = weight_mat_3ptfn(real(compute_corrs(sn_src, sn_snk, twoptfn)))
+        av_ff[8,:] = compute_ff_complex(sn_3ptfn_corr, sn_2ptfn_src_corr, sn_2ptfn_snk_corr, t_sink)
+    end
+
+    limits::Array{Int64,2} = zeros(Int64,8,2)
+    ff_sys_err::Array{Float64,1} = zeros(Float64,8)
+    ff_sys::Array{Float64,1} = zeros(Float64,8)
+    p = Progress(8, 1, "Scanning fit range...         ", 50)
+    for i::Int64 in 1:8
+        n_low::Array{Int64,1} = zeros(Int64,0)
+        n_high::Array{Int64,1} = zeros(Int64,0)
+        chi_low::Array{Float64,1} = zeros(Float64,0)
+        chi_high::Array{Float64,1} = zeros(Float64,0)
+        for x::Int64 in 4:(nmax-1)
+            chi2::Float64 = fit_corr(av_ff[i,:], w_mats[i,:,:], nmax-x, nmax, par_guess, func)[2]
+            push!(n_low, nmax-x)
+            push!(chi_low, chi2)
+            if chi2 > 10
+                break
+            end
+        end
+        for x::Int64 in 4:(t_size-nmin)
+            chi2::Float64 = fit_corr(av_ff[i,:], w_mats[i,:,:], nmin, nmin+x, par_guess, func)[2]
+            push!(n_high, nmin+x)
+            push!(chi_high, chi2)
+            if chi2 > 10
+                break
+            end
+        end
+
+        n_min::Int64 = 0
+        n_max::Int64 = 0
+        for x::Int64 in 1:length(n_low)
+            if chi_low[x] < 3
+                n_min = n_low[x]
+            end
+        end
+        for x::Int64 in 1:length(n_high)
+            if chi_high[x] < 3 && n_high[x] < t_size/2
+                n_max = n_high[x]
+            end
+        end
+
+        limits[i,1] = n_min
+        limits[i,2] = n_max
+        all_ff::Array{Float64,1} = zeros(Float64,0)
+
+        for x::Int64 in -1:1
+            for y::Int64 in -1:1
+                R::Float64 = fit_corr(av_ff[i,:], w_mats[i,:,:], n_min+x, n_max+y, par_guess, func)[1][2]
+                push!(all_ff, R)
+            end
+        end
+
+        extracted_ff::Float64 = mean(all_ff)
+        ff_sys[i] = extracted_ff
+        std_ff::Float64 = 0.
+        for x::Int64 in 1:length(all_ff)
+            std_ff += (all_ff[x] - extracted_ff)^2
+        end
+        std_ff = sqrt(std_ff)/9.
+        ff_sys_err[i] = std_ff
+
+        update!(p, i)
+    end
+    return limits, ff_sys, ff_sys_err
+end
+
+
+function find_mass_fit(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t_var::Int64, t_sn::Int64, limits::Array{Int64,2}, par_guess::Array{Float64,1}; func::String="exp", n_boot::Int64 = 100, hide_prog=false)
+    if !hide_prog
+        p = Progress(n_boot, 2, "Performing bootstrapping...   ", 50)
+    end
     n_configs::Int64 = size(twoptfn, 1)
     t_size::Int64 = size(twoptfn, 2)
     n_sources::Int64 = size(twoptfn, 3)
@@ -273,7 +397,7 @@ function find_mass_fit(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t_va
         for i::Int64 in 1:n_configs
             temp_2ptfn[i,:,:,:] = twoptfn[temp_rnd_conf[i],:,:,:]
         end
-        av_2ptfn::Array{Complex{Float64},3} = average(temp_2ptfn)
+        av_2ptfn::Array{Complex{Float64},3} = mean(temp_2ptfn,1)[1,:,:,:]
 
         ## Smeared src and snk ##
         id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
@@ -303,9 +427,11 @@ function find_mass_fit(twoptfn::Array{Complex{Float64},4}, t_gen_ev::Int64, t_va
         end
 
         ## update progress bar ##
-        update!(p, n)
+        if !hide_prog
+            update!(p, n)
+        end
     end
-    av_masses::Array{Float64,1} = average(all_masses)
+    av_masses::Array{Float64,1} = mean(all_masses,1)[1,:]
     if n_failed != n_boot
         av_masses[8] *= Float64(n_boot)/Float64(n_boot-n_failed)
     end

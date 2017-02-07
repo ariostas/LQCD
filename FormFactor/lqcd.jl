@@ -2,7 +2,8 @@ module lqcd
 using ProgressMeter
 
 export compute_corr, compute_corrs, read_hadspec_file, read_bar3ptfn_file, make_hermitian!, make_antihermitian!, find_ff_with2ptfn, find_mass_and_ff,
-       find_eigsys, find_sn_sink, find_opt_sn, find_mass_ff_and_vecs, read_hadspec_file_paper, find_mass_and_vecs, sn_stability
+       find_eigsys, find_sn_sink, find_opt_sn, find_mass_ff_and_vecs, read_hadspec_file_paper, find_mass_and_vecs, sn_stability, find_mass_and_ff_constvec,
+       find_mass_constvec, find_mass_extra_constvec
 
 
 function read_hadspec_file(had::String, m::String, pf::Tuple{Int64,Int64,Int64}, sources::Array{String,1}, sinks::Array{String,1}, file_prefix::String)
@@ -370,6 +371,41 @@ function eff_masses(corr::Array{Complex{Float64},1})
 end
 
 
+function eff_masses_r_theta(corrs::Array{Complex{Float64},2}, deltaT::Int64 = 5)
+    n_configs::Int64 = size(corrs, 1)
+    t_size::Int64 = size(corrs, 2)
+    masses::Array{Float64,1} = zeros(Float64, t_size)
+    massesR::Array{Float64,1} = zeros(Float64, t_size)
+    massesT::Array{Float64,1} = zeros(Float64, t_size)
+    massesImp::Array{Float64,1} = zeros(Float64, t_size)
+    for n::Int64 in 1:n_configs
+        corrs[n,:] *= e^(-angle(corrs[n,1])im)
+    end
+    av_corr = mean(corrs, 1)[1,:]
+    av_abs = mean(abs(corrs), 1)[1,:]
+    av_cos = mean(cos(angle(corrs)), 1)[1,:]
+    av_imp_same = mean(corrs./circshift(corrs,(0,deltaT)),1)[1,:]
+    av_imp_p1 = mean(circshift(corrs,(0,-1))./circshift(corrs,(0,deltaT)),1)[1,:]
+    for t::Int64 in 1:t_size
+        m::Float64 = (real(av_corr[t])/real(av_corr[mod(t,t_size)+1]) > 0. ? real(log(real(av_corr[t])/real(av_corr[mod(t,t_size)+1]))) : 0)
+        mR::Float64 = (av_abs[t]/av_abs[mod(t,t_size)+1] > 0. ? real(log(av_abs[t]/av_abs[mod(t,t_size)+1])) : 0)
+        mT::Float64 = (av_cos[t]/av_cos[mod(t,t_size)+1] > 0. ? real(log(av_cos[t]/av_cos[mod(t,t_size)+1])) : 0)
+        mImp::Float64 = (real(av_imp_same[t])/real(av_imp_p1[t]) > 0. ? real(log(real(av_imp_same[t])/real(av_imp_p1[t]))) : 0)
+        if t > t_size/2
+            m = -m
+            mR = -mR
+            mT = -mT
+            mImp = -mImp
+        end
+        masses[t] = m
+        massesR[t] = mR
+        massesT[t] = mT
+        massesImp[t] = mImp
+    end
+    return masses, massesR, massesT, massesImp
+end
+
+
 function compute_ff_complex(threeptfn::Array{Complex{Float64},1}, twoptfn_src::Array{Complex{Float64},1}, twoptfn_snk::Array{Complex{Float64},1}, t_sink::Int64)
     ff::Array{Float64,1} = zeros(Float64, t_sink+1)
     r::Complex{Float64} = 0.
@@ -474,6 +510,145 @@ function find_ff_with2ptfn(threeptfn::Array{Complex{Float64},4}, twoptfn_src::Ar
 end
 
 
+function find_mass_constvec(twoptfn_snk::Array{Complex{Float64},4}, t_gen_ev::Int64, t_var::Int64, t_sn::Int64; n_boot::Int64 = 100, hide_prog::Bool = false)
+    if !hide_prog
+        p = Progress(n_boot, 0.5, "Performing bootstrapping...   ", 50)
+    end
+    n_configs::Int64 = size(twoptfn_snk, 1)
+    t_size::Int64 = size(twoptfn_snk, 2)
+    n_sources::Int64 = size(twoptfn_snk, 3)
+    n_sinks::Int64 = size(twoptfn_snk, 4)
+    temp_rnd_conf::Array{Int64,1} = []
+    all_masses::Array{Float64,3} = zeros(Float64, n_boot, 8, t_size)
+    if n_sources != n_sinks
+        println("Error: Matrix is not square")
+    end
+    # find var and sn vectors
+    evals::Array{Complex{Float64},2}, evecs::Array{Complex{Float64},3} = find_eigsys(mean(twoptfn_snk,1)[1,:,:,:], t_gen_ev)
+    var_src::Array{Complex{Float64},1} = evecs[t_var+1,:,1]
+    varsn_snk::Array{Complex{Float64},1} = find_sn_sink(var_src, twoptfn_snk, t_sn)
+    sn_src::Array{Complex{Float64},1}, sn_snk::Array{Complex{Float64},1} = find_opt_sn(twoptfn_snk, t_sn)
+
+    for n::Int64 in 1:n_boot
+        temp_2ptfn_snk::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_rnd_conf = rand(1:n_configs, n_configs)
+        for i::Int64 in 1:n_configs
+            temp_2ptfn_snk[i,:,:,:] = twoptfn_snk[temp_rnd_conf[i],:,:,:]
+        end
+        av_2ptfn_snk::Array{Complex{Float64},3} = mean(temp_2ptfn_snk,1)[1,:,:,:]
+
+        ## Smeared src and snk ##
+        id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
+        for s::Int64 in 1:n_sources
+            smeared_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_2ptfn_snk)
+            all_masses[n, s, :] = eff_masses(smeared_2ptfn_snk_corr)
+        end
+
+        ## Variational src and snk ##
+        var_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_2ptfn_snk)
+        all_masses[n, 6, :] = eff_masses(var_2ptfn_snk_corr)
+
+        ## Var source and S/N sink
+        varsn_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_2ptfn_snk)
+        all_masses[n, 7, :] = eff_masses(varsn_2ptfn_snk_corr)
+
+        ## S/N source and sink ##
+        sn_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(sn_src, sn_snk, av_2ptfn_snk)
+        all_masses[n, 8, :] = eff_masses(sn_2ptfn_snk_corr)
+
+        ## update progress bar ##
+        if !hide_prog
+            update!(p, n)
+        end
+    end
+    av_masses::Array{Float64,2} = mean(all_masses,1)[1,:,:]
+    err_masses::Array{Float64,2} = zeros(Float64, 8, t_size)
+    for n::Int64 in 1:n_boot
+        err_masses += (all_masses[n, :, :]-av_masses).^2
+    end
+    err_masses = sqrt(err_masses/Float64(n_boot))
+
+    return av_masses, err_masses
+end
+
+
+function find_mass_extra_constvec(twoptfn_snk::Array{Complex{Float64},4}, t_gen_ev::Int64, t_var::Int64, t_sn::Int64, deltaT::Int64; n_boot::Int64 = 100, hide_prog::Bool = false)
+    if !hide_prog
+        p = Progress(n_boot, 0.5, "Performing bootstrapping...   ", 50)
+    end
+    n_configs::Int64 = size(twoptfn_snk, 1)
+    t_size::Int64 = size(twoptfn_snk, 2)
+    n_sources::Int64 = size(twoptfn_snk, 3)
+    n_sinks::Int64 = size(twoptfn_snk, 4)
+    temp_rnd_conf::Array{Int64,1} = []
+    all_masses::Array{Float64,3} = zeros(Float64, n_boot, 8, t_size)
+    all_massesR::Array{Float64,3} = zeros(Float64, n_boot, 8, t_size)
+    all_massesT::Array{Float64,3} = zeros(Float64, n_boot, 8, t_size)
+    all_massesImp::Array{Float64,3} = zeros(Float64, n_boot, 8, t_size)
+    if n_sources != n_sinks
+        println("Error: Matrix is not square")
+    end
+    # find var and sn vectors
+    evals::Array{Complex{Float64},2}, evecs::Array{Complex{Float64},3} = find_eigsys(mean(twoptfn_snk,1)[1,:,:,:], t_gen_ev)
+    var_src::Array{Complex{Float64},1} = evecs[t_var+1,:,1]
+    varsn_snk::Array{Complex{Float64},1} = find_sn_sink(var_src, twoptfn_snk, t_sn)
+    sn_src::Array{Complex{Float64},1}, sn_snk::Array{Complex{Float64},1} = find_opt_sn(twoptfn_snk, t_sn)
+
+    for n::Int64 in 1:n_boot
+        temp_2ptfn_snk::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_rnd_conf = rand(1:n_configs, n_configs)
+        for i::Int64 in 1:n_configs
+            temp_2ptfn_snk[i,:,:,:] = twoptfn_snk[temp_rnd_conf[i],:,:,:]
+        end
+        av_2ptfn_snk::Array{Complex{Float64},3} = mean(temp_2ptfn_snk,1)[1,:,:,:]
+
+        ## Smeared src and snk ##
+        id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
+        for s::Int64 in 1:n_sources
+            smeared_2ptfn_snk_corr::Array{Complex{Float64},2} = compute_corrs(id_matrix[:,s], id_matrix[:,s], temp_2ptfn_snk)
+            all_masses[n, s, :], all_massesR[n, s, :], all_massesT[n, s, :], all_massesImp[n, s, :] = eff_masses_r_theta(smeared_2ptfn_snk_corr, deltaT)
+        end
+
+        ## Variational src and snk ##
+        var_2ptfn_snk_corr::Array{Complex{Float64},2} = compute_corrs(var_src, var_src, temp_2ptfn_snk)
+        all_masses[n, 6, :], all_massesR[n, 6, :], all_massesT[n, 6, :], all_massesImp[n, 6, :] = eff_masses_r_theta(var_2ptfn_snk_corr, deltaT)
+
+        ## Var source and S/N sink
+        varsn_2ptfn_snk_corr::Array{Complex{Float64},2} = compute_corrs(var_src, varsn_snk, temp_2ptfn_snk)
+        all_masses[n, 7, :], all_massesR[n, 7, :], all_massesT[n, 7, :], all_massesImp[n, 7, :] = eff_masses_r_theta(varsn_2ptfn_snk_corr, deltaT)
+
+        ## S/N source and sink ##
+        sn_2ptfn_snk_corr::Array{Complex{Float64},2} = compute_corrs(sn_src, sn_snk, temp_2ptfn_snk)
+        all_masses[n, 8, :], all_massesR[n, 8, :], all_massesT[n, 8, :], all_massesImp[n, 8, :] = eff_masses_r_theta(sn_2ptfn_snk_corr, deltaT)
+
+        ## update progress bar ##
+        if !hide_prog
+            update!(p, n)
+        end
+    end
+    av_masses::Array{Float64,2} = mean(all_masses,1)[1,:,:]
+    av_massesR::Array{Float64,2} = mean(all_massesR,1)[1,:,:]
+    av_massesT::Array{Float64,2} = mean(all_massesT,1)[1,:,:]
+    av_massesImp::Array{Float64,2} = mean(all_massesImp,1)[1,:,:]
+    err_masses::Array{Float64,2} = zeros(Float64, 8, t_size)
+    err_massesR::Array{Float64,2} = zeros(Float64, 8, t_size)
+    err_massesT::Array{Float64,2} = zeros(Float64, 8, t_size)
+    err_massesImp::Array{Float64,2} = zeros(Float64, 8, t_size)
+    for n::Int64 in 1:n_boot
+        err_masses += (all_masses[n, :, :]-av_masses).^2
+        err_massesR += (all_massesR[n, :, :]-av_massesR).^2
+        err_massesT += (all_massesT[n, :, :]-av_massesT).^2
+        err_massesImp += (all_massesImp[n, :, :]-av_massesImp).^2
+    end
+    err_masses = sqrt(err_masses/Float64(n_boot))
+    err_massesR = sqrt(err_massesR/Float64(n_boot))
+    err_massesT = sqrt(err_massesT/Float64(n_boot))
+    err_massesImp = sqrt(err_massesImp/Float64(n_boot))
+
+    return av_masses, err_masses, av_massesR, err_massesR, av_massesT, err_massesT, av_massesImp, err_massesImp
+end
+
+
 function find_mass_and_ff(threeptfn::Array{Complex{Float64},4}, twoptfn_src::Array{Complex{Float64},4}, twoptfn_snk::Array{Complex{Float64},4}, t_sink::Int64, t_gen_ev::Int64, t_var::Int64, t_sn::Int64; n_boot::Int64 = 100)
     p = Progress(n_boot, 0.5, "Performing bootstrapping...   ", 50)
     n_configs::Int64 = size(threeptfn, 1)
@@ -566,6 +741,91 @@ function find_mass_and_ff(threeptfn::Array{Complex{Float64},4}, twoptfn_src::Arr
         err_ff[8,:] *= sqrt(Float64(n_boot)/Float64(n_boot-n_failed))
         err_masses[8,:] *= sqrt(Float64(n_boot)/Float64(n_boot-n_failed))
     end
+    return av_masses, err_masses, av_ff, err_ff
+end
+
+
+function find_mass_and_ff_constvec(threeptfn::Array{Complex{Float64},4}, twoptfn_src::Array{Complex{Float64},4}, twoptfn_snk::Array{Complex{Float64},4}, t_sink::Int64, t_gen_ev::Int64, t_var::Int64, t_sn::Int64; n_boot::Int64 = 100, hide_prog::Bool = false)
+    if !hide_prog
+        p = Progress(n_boot, 0.5, "Performing bootstrapping...   ", 50)
+    end
+    n_configs::Int64 = size(threeptfn, 1)
+    t_size::Int64 = size(threeptfn, 2)
+    n_sources::Int64 = size(threeptfn, 3)
+    n_sinks::Int64 = size(threeptfn, 4)
+    temp_rnd_conf::Array{Int64,1} = []
+    all_ff::Array{Float64,3} = zeros(Float64, n_boot, 8, t_sink+1)
+    all_masses::Array{Float64,3} = zeros(Float64, n_boot, 8, t_size)
+    if n_sources != n_sinks
+        println("Error: Matrix is not square")
+    end
+    # find var and sn vectors
+    evals::Array{Complex{Float64},2}, evecs::Array{Complex{Float64},3} = find_eigsys(mean(twoptfn_snk,1)[1,:,:,:], t_gen_ev)
+    var_src::Array{Complex{Float64},1} = evecs[t_var+1,:,1]
+    varsn_snk::Array{Complex{Float64},1} = find_sn_sink(var_src, twoptfn_snk, t_sn)
+    sn_src::Array{Complex{Float64},1}, sn_snk::Array{Complex{Float64},1} = find_opt_sn(twoptfn_snk, t_sn)
+
+    for n::Int64 in 1:n_boot
+        temp_3ptfn::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_2ptfn_src::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_2ptfn_snk::Array{Complex{Float64},4} = zeros(Complex{Float64}, n_configs, t_size, n_sources, n_sources)
+        temp_rnd_conf = rand(1:n_configs, n_configs)
+        for i::Int64 in 1:n_configs
+            temp_3ptfn[i,:,:,:] = threeptfn[temp_rnd_conf[i],:,:,:]
+            temp_2ptfn_src[i,:,:,:] = twoptfn_src[temp_rnd_conf[i],:,:,:]
+            temp_2ptfn_snk[i,:,:,:] = twoptfn_snk[temp_rnd_conf[i],:,:,:]
+        end
+        av_3ptfn::Array{Complex{Float64},3} = mean(temp_3ptfn,1)[1,:,:,:]
+        av_2ptfn_src::Array{Complex{Float64},3} = mean(temp_2ptfn_src,1)[1,:,:,:]
+        av_2ptfn_snk::Array{Complex{Float64},3} = mean(temp_2ptfn_snk,1)[1,:,:,:]
+
+        ## Smeared src and snk ##
+        id_matrix::Array{Complex{Float64},2} = eye(Complex{Float64}, n_sources)
+        for s::Int64 in 1:n_sources
+            smeared_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_3ptfn)
+            smeared_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_2ptfn_src)
+            smeared_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(id_matrix[:,s], id_matrix[:,s], av_2ptfn_snk)
+            all_ff[n, s, :] = compute_ff_complex(smeared_3ptfn_corr, smeared_2ptfn_src_corr, smeared_2ptfn_snk_corr, t_sink)
+            all_masses[n, s, :] = eff_masses(smeared_2ptfn_snk_corr)
+        end
+
+        ## Variational src and snk ##
+        var_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_3ptfn)
+        var_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_2ptfn_src)
+        var_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, var_src, av_2ptfn_snk)
+        all_ff[n, 6, :] = compute_ff_complex(var_3ptfn_corr, var_2ptfn_src_corr, var_2ptfn_snk_corr, t_sink)
+        all_masses[n, 6, :] = eff_masses(var_2ptfn_snk_corr)
+
+        ## Var source and S/N sink ##
+        varsn_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_3ptfn)
+        varsn_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_2ptfn_src)
+        varsn_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(var_src, varsn_snk, av_2ptfn_snk)
+        all_ff[n, 7, :] = compute_ff_complex(varsn_3ptfn_corr, varsn_2ptfn_src_corr, varsn_2ptfn_snk_corr, t_sink)
+        all_masses[n, 7, :] = eff_masses(varsn_2ptfn_snk_corr)
+
+        ## S/N source and sink ##
+        sn_2ptfn_src_corr::Array{Complex{Float64},1} = compute_corr(sn_src, sn_snk, av_2ptfn_src)
+        sn_2ptfn_snk_corr::Array{Complex{Float64},1} = compute_corr(sn_src, sn_snk, av_2ptfn_snk)
+        sn_3ptfn_corr::Array{Complex{Float64},1} = compute_corr(sn_src, sn_snk, av_3ptfn)
+        all_ff[n, 8, :] = compute_ff_complex(sn_3ptfn_corr, sn_2ptfn_src_corr, sn_2ptfn_snk_corr, t_sink)
+        all_masses[n, 8, :] = eff_masses(sn_2ptfn_snk_corr)
+
+        ## update progress bar ##
+        if !hide_prog
+            update!(p, n)
+        end
+    end
+    av_ff::Array{Float64,2} = mean(all_ff,1)[1,:,:]
+    av_masses::Array{Float64,2} = mean(all_masses,1)[1,:,:]
+    err_ff::Array{Float64,2} = zeros(Float64, 8, t_sink+1)
+    err_masses::Array{Float64,2} = zeros(Float64, 8, t_size)
+    for n::Int64 in 1:n_boot
+        err_ff += (all_ff[n, :, :]-av_ff).^2
+        err_masses += (all_masses[n, :, :]-av_masses).^2
+    end
+    err_ff = sqrt(err_ff/Float64(n_boot))
+    err_masses = sqrt(err_masses/Float64(n_boot))
+
     return av_masses, err_masses, av_ff, err_ff
 end
 

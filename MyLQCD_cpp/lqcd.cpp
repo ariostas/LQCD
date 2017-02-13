@@ -24,44 +24,48 @@ using namespace TMath;
 using namespace std;
 
 // Define common objects
-vector<vector<TComplex> > id, nu;
+vector<vector<TComplex> > id, nu, nu2;
 TRandom3 *randGen = new TRandom3();
 TF1 *func = new TF1("x_0 dist", "TMath::Sqrt(1.-x*x)*TMath::Exp(2./3.*[0] * x)", -.99999, .99999);
 
 // Declare functions
 void initialize(GaugeField<vector<vector<TComplex> > >*, TString);
 void singleUpdate(GaugeField<vector<vector<TComplex> > >*,  UInt_t, UInt_t, UInt_t, UInt_t, UInt_t);
+vector<vector<TComplex> > randomMatrix(vector<vector<TComplex> >);
 void update(GaugeField<vector<vector<TComplex> > >*, Int_t);
 void measure(GaugeField<vector<vector<TComplex> > >*, Int_t);
 TGraph* readData(TString);
 void graph(TGraph*, TGraph*, const TString, TCanvas*, const TString, const TString, const TString);
 
-vector<vector<TComplex> > multiply(vector<vector<TComplex> >, vector<vector<TComplex> >);
-vector<vector<TComplex> > multiply(TComplex, vector<vector<TComplex> >);
+vector<vector<TComplex> > multiply(vector<vector<TComplex> >, vector<vector<TComplex> >, Int_t);
+vector<vector<TComplex> > multiply(TComplex, vector<vector<TComplex> >, Int_t);
 vector<vector<TComplex> > add(vector<vector<TComplex> >, vector<vector<TComplex> >);
 vector<vector<TComplex> > dagger(vector<vector<TComplex> >);
-TComplex determinant(vector<vector<TComplex> >);
+TComplex determinant(vector<vector<TComplex> >, Int_t);
 TComplex trace(vector<vector<TComplex> >);
 
 // Define parameters
 Int_t Ns = 4, Nt = 8;
-Int_t Ntherm = 2, Ncorr = 2, Nconfig = 50;
-Double_t beta = 6.0;
+Int_t Ntherm = 0, Ncorr = 1, Nconfig = 50;
+Double_t beta = 5.8;
 
 // Define storage variables
 Double_t entryArray[1000];
 Double_t plaqArray[1000];
 
 // Main function
-void lqcdSU2(){
+void lqcd(){
 
 	cout << "\n\nStarting process...\n\n";
 
-	vector<TComplex> row1; row1.push_back(1); row1.push_back(0);
-	vector<TComplex> row2; row2.push_back(0); row2.push_back(1);
-	id.push_back(row1); id.push_back(row2);
-	row1[0] = 0; row2[1] = 0;
-	nu.push_back(row1); nu.push_back(row2);
+	vector<TComplex> row1; row1.push_back(1); row1.push_back(0); row1.push_back(0);
+	vector<TComplex> row2; row2.push_back(0); row2.push_back(1); row2.push_back(0);
+	vector<TComplex> row3; row3.push_back(0); row3.push_back(0); row3.push_back(1);
+	id.push_back(row1); id.push_back(row2); id.push_back(row3);
+	row1[0] = 0; row2[1] = 0; row3[2] = 0;
+	nu.push_back(row1); nu.push_back(row2); nu.push_back(row3);
+	vector<TComplex> row; row.push_back(0); row.push_back(0);
+	nu2.push_back(row); nu2.push_back(row);
 
 	GaugeField<vector<vector<TComplex> > > field(Ns, Ns, Ns, Nt);
 
@@ -133,14 +137,14 @@ void singleUpdate(GaugeField<vector<vector<TComplex> > > *f, UInt_t x, UInt_t y,
 		else if(d == 2) tempz--;
 		else if(d == 3) tempt--;
 
-		tempA1 = multiply(tempA1, dagger((*f)(tempx, tempy, tempz, tempt, d)));
+		tempA1 = multiply(tempA1, dagger((*f)(tempx, tempy, tempz, tempt, d)), 3);
 
 		if(dir == 0) tempx--;
 		else if(dir == 1) tempy--;
 		else if(dir == 2) tempz--;
 		else if(dir == 3) tempt--;
 
-		tempA1 = multiply(tempA1, dagger((*f)(tempx, tempy, tempz, tempt, dir)));
+		tempA1 = multiply(tempA1, dagger((*f)(tempx, tempy, tempz, tempt, dir)), 3);
 
 		if(d == 0) tempx++;
 		else if(d == 1) tempy++;
@@ -158,64 +162,58 @@ void singleUpdate(GaugeField<vector<vector<TComplex> > > *f, UInt_t x, UInt_t y,
 		else if(d == 2) tempz--;
 		else if(d == 3) tempt--;
 
-		tempA2 = multiply(tempA2, dagger((*f)(tempx, tempy, tempz, tempt, d)));
-		tempA2 = multiply(tempA2, (*f)(tempx, tempy, tempz, tempt, dir));
+		tempA2 = multiply(tempA2, dagger((*f)(tempx, tempy, tempz, tempt, d)), 3);
+		tempA2 = multiply(tempA2, (*f)(tempx, tempy, tempz, tempt, dir), 3);
 
 		A = add(A,tempA1);
 		A = add(A,tempA2);
 
 	}
 
+	vector<vector<TComplex> > tempA;
+	vector<TComplex> row1; row1.push_back(TComplex(0)); row1.push_back(TComplex(0));
+	tempA.push_back(row1); tempA.push_back(row1);
+
+	// Construct R
+	vector<vector<TComplex> > R = id, tempR;
+
+	tempA[0][0] = A[0][0]; tempA[0][1] = A[0][1];
+	tempA[1][0] = A[1][0]; tempA[1][1] = A[1][1];
+
+	tempR = randomMatrix(tempA);
+
+	R[0][0] = tempR[0][0]; R[0][1] = tempR[0][1];
+	R[1][0] = tempR[1][0]; R[1][1] = tempR[1][1];
+
+	// Construct S
+	vector<vector<TComplex> > S = id, tempS;
+
+	vector<vector<TComplex> > AR = multiply(A,R,3);
+
+	tempA[0][0] = AR[0][0]; tempA[0][1] = AR[0][2];
+	tempA[1][0] = AR[2][0]; tempA[1][1] = AR[2][2];
+
+	tempS = randomMatrix(tempA);
+
+	S[0][0] = tempS[0][0]; S[0][2] = tempS[0][1];
+	S[2][0] = tempS[1][0]; S[2][2] = tempS[1][1];
+
+	// Construct T
+	vector<vector<TComplex> > T = id, tempT;
+
+	vector<vector<TComplex> > ARS = multiply(A,S,3);
+
+	tempA[0][0] = ARS[1][1]; tempA[0][1] = ARS[1][2];
+	tempA[1][0] = ARS[2][1]; tempA[1][1] = ARS[2][2];
+
+	tempT = randomMatrix(tempA);
+
+	T[1][1] = tempT[0][0]; T[1][2] = tempT[0][1];
+	T[2][1] = tempT[1][0]; T[2][2] = tempT[1][1];
+
 	// Construct new link
 
-	TComplex a = TComplex::Sqrt(determinant(A));
-
-	vector<vector<TComplex> > V = multiply(1./a, A);
-
-	// func->SetParameter(0, a.Rho()*beta);
-	// Double_t x0 = func->GetRandom(-.99999,.99999), x1, x2, x3;
-
-	Double_t x0, x1, x2, x3;
-
-	// while(true){
-	// 	Double_t r = randGen->Uniform(1), r1 = randGen->Uniform(1), r2 = randGen->Uniform(1), r3 = randGen->Uniform(1);
-
-	// 	Double_t lambda2 = -1./(2.*a.Rho()*beta)*(Log(r1)+Cos(2*Pi()*r2)*Cos(2*Pi()*r2)*Log(r3));
-
-	// 	if(r*r > 1 - lambda2) continue;
-
-	// 	x0 = 1-2*lambda2;
-	// 	break;
-	// }
-
-	while(true){
-
-		Double_t x = randGen->Uniform(Exp(-2*beta*a.Re()), 1);
-		x0 = 1 + 1./(beta*a.Re())*Log(x);
-
-		Double_t r = randGen->Uniform(1);
-
-		if(r > Sqrt(1-x0*x0)) continue;
-
-		break;
-	}
-
-	randGen->Sphere(x1, x2, x3, Sqrt(1.-x0*x0));
-
-	vector<TComplex> row1, row2;
-	row1.push_back(TComplex(x0,x3)); row1.push_back(TComplex(x2,x1));
-	row2.push_back(TComplex(-x2,x1)); row2.push_back(TComplex(x0,-x3));
-
-	vector<vector<TComplex> > X;
-	X.push_back(row1); X.push_back(row2);
-
-	(*f)(x,y,z,t,d) = multiply(X, dagger(V));
-
-	// vector<vector<TComplex> > Uprime = multiply(X, dagger(V));
-
-	// Double_t dS = -beta/2.*trace(multiply(add(Uprime, multiply(-1., (*f)(x,y,z,t,d))), A)).Re();
-
-	// if(randGen->Uniform(1) <= Exp(-dS)) (*f)(x,y,z,t,d) = Uprime;
+	(*f)(x,y,z,t,d) = multiply(T,multiply(S,multiply(R,(*f)(x,y,z,t,d),3),3),3);
 
 }
 
@@ -236,6 +234,43 @@ void update(GaugeField<vector<vector<TComplex> > > *f, Int_t NSweeps){
 		}
 
 	}
+
+}
+
+vector<vector<TComplex> > randomMatrix(vector<vector<TComplex> > A){
+
+	if(A.size() != 2) cout << "Input must be block of original matrix" << endl;
+
+	TComplex a = TComplex::Sqrt(determinant(A, 2));
+
+	vector<vector<TComplex> > V = multiply(1./a, A, 2);
+
+	// func->SetParameter(0, a.Rho()*beta);
+	// Double_t x0 = func->GetRandom(-.99999,.99999), x1, x2, x3;
+
+	Double_t x0, x1, x2, x3;
+
+	while(true){
+		Double_t r = randGen->Uniform(1), r1 = randGen->Uniform(1), r2 = randGen->Uniform(1), r3 = randGen->Uniform(1);
+
+		Double_t lambda2 = -1./(3./2.*a.Rho()*beta)*(Log(r1)+Cos(2*Pi()*r2)*Cos(2*Pi()*r2)*Log(r3));
+
+		if(r*r > 1 - lambda2) continue;
+
+		x0 = 1-2*lambda2;
+		break;
+	}
+
+	randGen->Sphere(x1, x2, x3, Sqrt(1.-x0*x0));
+
+	vector<TComplex> row1, row2;
+	row1.push_back(TComplex(x0,x3)); row1.push_back(TComplex(x2,x1));
+	row2.push_back(TComplex(-x2,x1)); row2.push_back(TComplex(x0,-x3));
+
+	vector<vector<TComplex> > result;
+	result.push_back(row1); result.push_back(row2);
+
+	return result;
 
 }
 
@@ -261,8 +296,8 @@ void measure(GaugeField<vector<vector<TComplex> > > *f, Int_t nEntry){
 							else if(dir1 == 2) tempz++;
 							else if(dir1 == 3) tempt++;
 
-							plaq = multiply(plaq, (*f)(tempx, tempy, tempz, tempt, dir2));
-						
+							plaq = multiply(plaq, (*f)(tempx, tempy, tempz, tempt, dir2), 3);
+
 							if(dir2 == 0) tempx++;
 							else if(dir2 == 1) tempy++;
 							else if(dir2 == 2) tempz++;
@@ -272,16 +307,16 @@ void measure(GaugeField<vector<vector<TComplex> > > *f, Int_t nEntry){
 							else if(dir1 == 2) tempz--;
 							else if(dir1 == 3) tempt--;
 
-							plaq = multiply(plaq, dagger((*f)(tempx, tempy, tempz, tempt, dir1)));
-							
+							plaq = multiply(plaq, dagger((*f)(tempx, tempy, tempz, tempt, dir1)), 3);
+
 							if(dir2 == 0) tempx--;
 							else if(dir2 == 1) tempy--;
 							else if(dir2 == 2) tempz--;
 							else if(dir2 == 3) tempt--;
 
-							plaq = multiply(plaq, dagger((*f)(tempx, tempy, tempz, tempt, dir2)));
+							plaq = multiply(plaq, dagger((*f)(tempx, tempy, tempz, tempt, dir2)), 3);
 
-							Double_t tr = 1. - 1./2.*trace(plaq).Re();
+							Double_t tr = 1 - 1./3.*trace(plaq).Rho();
 
 							// cout << determinant(plaq, 3) << endl;
 
@@ -306,29 +341,40 @@ void measure(GaugeField<vector<vector<TComplex> > > *f, Int_t nEntry){
 	cout << "Average: " << avPlaq << endl;
 	cout << "Average spatial: " << avSpPlaq << endl;
 	cout << "Average temporal: " << avTmPlaq << endl << endl;
-	
+
+
 }
 
-vector<vector<TComplex> > multiply(vector<vector<TComplex> > mat1, vector<vector<TComplex> > mat2){
+vector<vector<TComplex> > multiply(vector<vector<TComplex> > mat1, vector<vector<TComplex> > mat2, Int_t size){
 
 	vector<vector<TComplex> > result = id;
 
-	result = nu;
-	for(Int_t n = 0; n < 2; n++){
-		for(Int_t m = 0; m < 2; m++){
-			result[n][m] = mat1[n][0]*mat2[0][m] + mat1[n][1]*mat2[1][m];
+	if(size == 2){
+		result = nu2;
+		for(Int_t n = 0; n < 2; n++){
+			for(Int_t m = 0; m < 2; m++){
+				result[n][m] = mat1[n][0]*mat2[0][m] + mat1[n][1]*mat2[1][m];
+			}
+		}
+	}
+
+	else{
+		for(Int_t n = 0; n < 3; n++){
+			for(Int_t m = 0; m < 3; m++){
+				result[n][m] = mat1[n][0]*mat2[0][m] + mat1[n][1]*mat2[1][m] + mat1[n][2]*mat2[2][m];
+			}
 		}
 	}
 
 	return result;
 }
 
-vector<vector<TComplex> > multiply(TComplex s, vector<vector<TComplex> > mat){
+vector<vector<TComplex> > multiply(TComplex s, vector<vector<TComplex> > mat, Int_t size){
 
 	vector<vector<TComplex> > result = id;
-	
-	for(UInt_t n = 0; n < 2; n++){
-		for(UInt_t m = 0; m < 2; m++){
+
+	for(UInt_t n = 0; n < size; n++){
+		for(UInt_t m = 0; m < size; m++){
 			result[n][m] = s*mat[n][m];
 		}
 	}
@@ -339,9 +385,9 @@ vector<vector<TComplex> > multiply(TComplex s, vector<vector<TComplex> > mat){
 vector<vector<TComplex> > add(vector<vector<TComplex> > mat1, vector<vector<TComplex> > mat2){
 
 	vector<vector<TComplex> > result = id;
-	
-	for(Int_t n = 0; n < 2; n++){
-		for(Int_t m = 0; m < 2; m++){
+
+	for(Int_t n = 0; n < 3; n++){
+		for(Int_t m = 0; m < 3; m++){
 			result[n][m] = mat1[n][m] + mat2[n][m];
 		}
 	}
@@ -352,9 +398,9 @@ vector<vector<TComplex> > add(vector<vector<TComplex> > mat1, vector<vector<TCom
 vector<vector<TComplex> > dagger(vector<vector<TComplex> > mat){
 
 	vector<vector<TComplex> > result = id;
-	
-	for(Int_t n = 0; n < 2; n++){
-		for(Int_t m = 0; m < 2; m++){
+
+	for(Int_t n = 0; n < 3; n++){
+		for(Int_t m = 0; m < 3; m++){
 			result[n][m] = TComplex::Conjugate(mat[m][n]);
 		}
 	}
@@ -362,12 +408,13 @@ vector<vector<TComplex> > dagger(vector<vector<TComplex> > mat){
 	return result;
 }
 
-TComplex determinant(vector<vector<TComplex> > mat){
-	return mat[0][0]*mat[1][1] - mat[0][1]*mat[1][0];
+TComplex determinant(vector<vector<TComplex> > mat, Int_t size){
+	if(size == 2) return mat[0][0]*mat[1][1] - mat[0][1]*mat[1][0];
+	else return mat[0][0]*(mat[1][1]*mat[2][2] - mat[1][2]*mat[2][1]) - mat[0][1]*(mat[1][0]*mat[2][2] - mat[1][2]*mat[2][0]) + mat[0][2]*(mat[1][0]*mat[2][1] - mat[1][1]*mat[2][0]);
 }
 
 TComplex trace(vector<vector<TComplex> > mat){
-	return mat[0][0] + mat[1][1];
+	return mat[0][0] + mat[1][1] + mat[2][2];
 }
 
 TGraph* readData(TString dataset){
@@ -379,7 +426,7 @@ TGraph* readData(TString dataset){
     Double_t plaqArr[1000], entryArr[1000];
 
     ifstream ifs(fileName); if(!ifs.is_open()){cout << "Error. File " << fileName << " not found. Exiting...\n"; return NULL;}
-    
+
     while(ifs >> plaq){
 
         plaqArr[nEntries] = plaq;
@@ -430,7 +477,7 @@ void graph(TGraph *graph1, TGraph *graph2, const TString graphName, TCanvas *can
 
     mg->Add(graph1);
     mg->Add(graph2);
-    
+
     // graph1->Draw("ap");
     // graph2->Draw("same ap");
     mg->Draw("ap");

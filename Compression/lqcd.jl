@@ -1,6 +1,9 @@
 module lqcd
 
 const var_type = Complex{Float64}
+const storage_type = UInt16
+const distance_type = Float32
+const index_type = UInt32
 
 const sigma_0 = [one(var_type) zero(var_type);
                  zero(var_type) one(var_type)]
@@ -70,7 +73,8 @@ export A,B,C,D,gen,T_1,T_2,T_3,T_4,T_5,T_6,T_7,T_8,T_n,id,ze,
        fix_unitarity, fix_unitarity!, find_gp_matrices, load_gp_matrices,
        distance, all_bit_combinations, random_matrices, load_random_matrices,
        fixed_points, load_fixed_points, set_up_random_matrices,
-       subdiv_gp_matrices, multilateration
+       subdiv_gp_matrices, multilateration, distances, multilateration_simd,
+       find_closest_matrix_multi, find_closest_matrix_direct
 
 
 function set_up_random_matrices()
@@ -83,54 +87,50 @@ function set_up_random_matrices()
 end
 
 
-
 function all_bit_combinations(n_bits)
-    combs = Array{Bool}(n_bits,2^n_bits)
-    current = false
-    for b in 1:n_bits, c in 1:2^n_bits
-        combs[b,c] = current
-        if c%(2^(b-1)) == 0
-            current = !current
-        end
-    end
+    combs = zeros(storage_type,2^n_bits)
+    combs[:] = [0:2^n_bits-1;]
     return combs
 end
 
 
 function random_matrices(epsilon, n_bits=16)
-    rand_m = Array{Array{Complex{Float64},2}}(n_bits)
+    rand_m = Array{var_type}(3,3,n_bits)
     all_combs = all_bit_combinations(n_bits)
     for i in 1:n_bits
-        rand_m[i] = expm(im*epsilon*sum((rand(8)-0.5).*T_n))
+        r = rand(8)-0.5
+        while(norm(r) > 1)
+            r = 2.0*rand(8)-1.
+        end
+        r *= epsilon
+        rand_m[:,:,i] = expm(im*sum(T_n.*r))
+        #rand_m[:,:,i] = expm(im*epsilon*sum((rand(8)-0.5).*T_n))
     end
     tmp_dist = map(x->distance(id,x),
-                            [prod(rand_m.^all_combs[:,i]) for i in 1:2^n_bits])
+                        [prod([rand_m[:,:,j]^(div(all_combs[i],2^(j-1))%2)
+                                    for j in 1:n_bits]) for i in 1:2^n_bits])
 
     order = sortperm(tmp_dist)
-    dist = Array{Float64}(2^n_bits)
-    matrices = Array{Bool}(n_bits,2^n_bits)
+    dist = Array{distance_type}(2^n_bits)
+    matrices = Array{storage_type}(2^n_bits)
     for i in 1:2^n_bits
         dist[i] = tmp_dist[order[i]]
-        matrices[:,i] = all_combs[order[i]]
-    end
-    gen_matrices = Array{Complex{Float64}}(3,3,n_bits)
-    for i in 1:n_bits
-        gen_matrices[:,:,i] = rand_m[i]
+        matrices[i] = all_combs[order[i]]
     end
     write("Matrix_data/random_matrices_eps_"*string(n_bits)*"bits_"
-                            *string(epsilon)*"eps_genmatrices", gen_matrices)
+                            *string(epsilon)*"eps_genmatrices", rand_m)
     write("Matrix_data/random_matrices_eps_"*string(n_bits)*"bits_"
                                 *string(epsilon)*"eps_distances", dist)
     write("Matrix_data/random_matrices_eps_"*string(n_bits)*"bits_"
                                 *string(epsilon)*"eps_matrices", matrices)
-    return gen_matrices, dist, matrices
+    return rand_m, dist, matrices
 end
 
 
 function load_random_matrices(epsilon, n_bits=16)
-    dist = Array{Float64}(2^n_bits)
-    matrices = Array{Bool}(n_bits,2^n_bits)
-    gen_matrices = Array{Complex{Float64}}(3,3,n_bits)
+    dist = Array{distance_type}(2^n_bits)
+    matrices = Array{storage_type}(2^n_bits)
+    gen_matrices = Array{var_type}(3,3,n_bits)
     read!("Matrix_data/random_matrices_eps_"*string(n_bits)*"bits_"
                             *string(epsilon)*"eps_genmatrices", gen_matrices)
     read!("Matrix_data/random_matrices_eps_"*string(n_bits)*"bits_"
@@ -141,29 +141,26 @@ function load_random_matrices(epsilon, n_bits=16)
 end
 
 
-function fixed_points(gen_matrices, epsilon, epsilon_fixed=0.35)
-    n_bits = size(gen_matrices,3)
-    rand_m = Array{Array{Complex{Float64},2}}(n_bits)
-    for i in 1:n_bits
-        rand_m[i] = gen_matrices[:,:,i]
-    end
-    fixed_pts = Array{Complex{Float64}}(3,3,9)
+function fixed_points(rand_m, epsilon, epsilon_fixed=0.75)
+    n_bits = size(rand_m,3)
+    fixed_pts = Array{var_type}(3,3,9)
     for i in 1:8
         fixed_pts[:,:,i] = expm(im*epsilon_fixed*T_n[i])
     end
     fixed_pts[:,:,9] = id
     all_combs = all_bit_combinations(n_bits)
-    tmp_dist = Array{Float64}(2^n_bits,9)
-    dist = Array{Float64}(2^n_bits,9)
-    matrices = Array{Bool}(n_bits,2^n_bits,9)
+    tmp_dist = Array{distance_type}(2^n_bits,9)
+    dist = Array{distance_type}(2^n_bits,9)
+    matrices = Array{storage_type}(2^n_bits,9)
     for i in 1:9
         tmp_dist[:,i] = map(x->distance(fixed_pts[:,:,i],x),
-                    [prod(rand_m.^all_combs[:,i]) for i in 1:2^n_bits])
+                            [prod([rand_m[:,:,j]^(div(all_combs[i],2^(j-1))%2)
+                                for j in 1:n_bits]) for i in 1:2^n_bits])
 
         order = sortperm(tmp_dist[:,i])
         for j in 1:2^n_bits
             dist[j,i] = tmp_dist[order[j],i]
-            matrices[:,j,i] = all_combs[:,order[j]]
+            matrices[j,i] = all_combs[order[j]]
         end
     end
     write("Matrix_data/fixed_points_eps_"*string(n_bits)*"bits_"
@@ -177,9 +174,9 @@ end
 
 
 function load_fixed_points(epsilon, n_bits=16)
-    fixed_pts = Array{Complex{Float64}}(3,3,9)
-    dist = Array{Float64}(2^n_bits,9)
-    matrices = Array{Bool}(n_bits,2^n_bits,9)
+    fixed_pts = Array{var_type}(3,3,9)
+    dist = Array{distance_type}(2^n_bits,9)
+    matrices = Array{storage_type}(2^n_bits,9)
     read!("Matrix_data/fixed_points_eps_"*string(n_bits)*"bits_"
                             *string(epsilon)*"eps_fixedpts", fixed_pts)
     read!("Matrix_data/fixed_points_eps_"*string(n_bits)*"bits_"
@@ -192,6 +189,13 @@ end
 
 function distance(M1, M2)
     return sqrt(1./2.*sum(angle(eigvals(M1'*M2)).^2))
+end
+
+
+function distances(M1, matrices, gen_mat)
+    return map(x->distance(M1,x),
+                    [prod([gen_mat[:,:,j]^(div(matrices[i],2^(j-1))%2)
+                    for j in 1:size(gen_mat,3)]) for i in 1:length(matrices)])
 end
 
 
@@ -277,18 +281,21 @@ function subdiv_gp_matrices(filename, matrices)
         if distance(matrices[i],matrices[j]) > min_dist
             continue
         end
-        #push!(new_matrices,matrices[i]*sqrtm(matrices[i]'*matrices[j]))
-        tmp_m = logm(matrices[i]'*matrices[j])/im
-        tmp_comps = Array{Float64}(8)
-        tmp_comps[1] = real(tmp_m[2,1])
-        tmp_comps[2] = imag(tmp_m[2,1])
-        tmp_comps[4] = real(tmp_m[3,1])
-        tmp_comps[5] = imag(tmp_m[3,1])
-        tmp_comps[6] = real(tmp_m[3,2])
-        tmp_comps[7] = imag(tmp_m[3,2])
-        tmp_comps[8] = -sqrt(3.)/2.*real(tmp_m[3,3])
-        tmp_comps[3] = real(tmp_m[1,1]) - tmp_comps[8]/sqrt(3.)
-        push!(new_matrices,matrices[i]*expm(im*sum(T_n.*tmp_comps)/2.))
+        # if true#!(distance(matrices[i],matrices[i]*sqrtm(matrices[i]'*matrices[j])) ≈ distance(matrices[i]*sqrtm(matrices[i]'*matrices[j]),matrices[j]))
+        #     println(distance(matrices[i],matrices[i]*sqrtm(matrices[i]'*matrices[j])),"  ", distance(matrices[i]*sqrtm(matrices[i]'*matrices[j]),matrices[j]))
+        # end
+        push!(new_matrices,matrices[i]*sqrtm(matrices[i]'*matrices[j]))
+        # tmp_m = logm(matrices[i]'*matrices[j])/im
+        # tmp_comps = Array{Float64}(8)
+        # tmp_comps[1] = real(tmp_m[2,1])
+        # tmp_comps[2] = imag(tmp_m[2,1])
+        # tmp_comps[4] = real(tmp_m[3,1])
+        # tmp_comps[5] = imag(tmp_m[3,1])
+        # tmp_comps[6] = real(tmp_m[3,2])
+        # tmp_comps[7] = imag(tmp_m[3,2])
+        # tmp_comps[8] = -sqrt(3.)/2.*real(tmp_m[3,3])
+        # tmp_comps[3] = real(tmp_m[1,1]) - tmp_comps[8]/sqrt(3.)
+        # push!(new_matrices,matrices[i]*expm(im*sum(T_n.*tmp_comps)/2.))
     end
 
     storage_array = Array{var_type}(3,3,length(new_matrices))
@@ -303,10 +310,10 @@ function subdiv_gp_matrices(filename, matrices)
 end
 
 
-function multilateration(matrices, fixed_to_all, distance_to_fixed)
-    epsilon = 0.2
+function multilateration(matrices, fixed_to_all, distance_to_fixed, epsilon=0.2)
+    intersection = Array{storage_type}(0)
     n_fixed = length(distance_to_fixed)
-    ranges = Array{Int64}(2,n_fixed)
+    ranges = Array{index_type}(2,n_fixed)
     for i in 1:n_fixed
         ranges[1,i] = searchsortedfirst(fixed_to_all[:,i],
                                                 distance_to_fixed[i]-epsilon)
@@ -314,20 +321,23 @@ function multilateration(matrices, fixed_to_all, distance_to_fixed)
                                                 distance_to_fixed[i]+epsilon)
         if ranges[1,i] == 0 || ranges[1,i] == n_fixed+1 || ranges[2,i] == 0 ||
             ranges[2,i] == n_fixed+1
-            println("One of the intervals is empty")
+            #println("One of the intervals is empty")
+            return intersection
         end
-        println(ranges[2,i]-ranges[1,i])
+        #println(ranges[1,i]," ",ranges[2,i],"   ",ranges[2,i]-ranges[1,i])
     end
-    tmp = Array{Array{Bool,1}}(0)
-    for i in ranges[1,1]:ranges[2,1]
+    range_lengths = [ranges[2,i]-ranges[1,i] for i in 1:n_fixed]
+    order = sortperm(range_lengths)
 
-        mat = matrices[:,i,1]
+    for i in ranges[1,order[1]]:ranges[2,order[1]]
+
+        mat = matrices[i,order[1]]
         is_in_intersection = true
 
-        for n in 2:n_fixed
+        for n in order[2:end]
             is_in_range = false
             for j in ranges[1,n]:ranges[2,n]
-                if mat == matrices[:,j,n]
+                if mat == matrices[j,n]
                     is_in_range = true
                     break
                 end
@@ -339,19 +349,94 @@ function multilateration(matrices, fixed_to_all, distance_to_fixed)
         end
 
         if is_in_intersection
-            push!(tmp, mat)
+            push!(intersection, mat)
         end
     end
-    if length(tmp) == 0
-        println("Intersection is empty")
-    else
-        println("Intersection has ",length(tmp)," elements")
+    # if length(intersection) == 0
+    #     println("Intersection is empty")
+    # else
+    #     println("Intersection has ",length(intersection)," elements")
+    # end
+    return intersection#, ranges
+end
+
+function multilateration_simd(matrices, fixed_to_all, distance_to_fixed, epsilon = 0.2)
+    intersection = Array{storage_type}(0)
+    n_fixed = length(distance_to_fixed)
+    ranges = Array{index_type}(2,n_fixed)
+    for i in 1:n_fixed
+        ranges[1,i] = searchsortedfirst(fixed_to_all[:,i],
+                                                distance_to_fixed[i]-epsilon)
+        ranges[2,i] = searchsortedlast(fixed_to_all[:,i],
+                                                distance_to_fixed[i]+epsilon)
+        if ranges[1,i] == 0 || ranges[1,i] == n_fixed+1 || ranges[2,i] == 0 ||
+            ranges[2,i] == n_fixed+1
+            println("One of the intervals is empty")
+            return Array{storage_type}(0)
+        end
+        # println(ranges[2,i]-ranges[1,i])
     end
-    intersection = Array{Bool}(16,length(tmp))
-    for n in 1:length(tmp)
-        intersection[:,n] = tmp[n]
+    range_lengths = [ranges[2,i]-ranges[1,i] for i in 1:n_fixed]
+    m, n_small = findmin(range_lengths)
+
+    for i in ranges[1,n_small]:ranges[2,n_small]
+
+        mat = matrices[i,n_small]
+        is_in_intersection = true
+
+        for n in 1:n_fixed
+            if n == n_small
+                continue
+            end
+            is_in_range = zero(Int32)
+            @simd for j in ranges[1,n]:ranges[2,n]
+                is_in_range += (mat == matrices[j,n])
+            end
+            if is_in_range == 0
+                is_in_intersection = false
+                break
+            end
+        end
+
+        if is_in_intersection
+            push!(intersection, mat)
+        end
     end
+    # if length(intersection) == 0
+    #     println("Intersection is empty")
+    #     epsilon += 0.05
+    # else
+    #     println("Intersection has ",length(intersection)," elements")
+    # end
     return intersection
+end
+
+
+function find_closest_matrix_multi(M, gp_matrices, fixed_matrices, all_mat,
+                                    dist_to_fixed, gen_mat, eps=0.2)
+    gp_i = findmin([distance(M,gp_matrices[j]) for j in 1:1080])[2]
+    distf = [distance(M,gp_matrices[gp_i]*fixed_matrices[:,:,j]) for j in 1:9]
+    intersection = Array{storage_type}(0)
+    ranges = Array{UInt32}(2,9)
+    for t in 1:10
+        intersection = multilateration(all_mat, dist_to_fixed, distf,eps+0.02t)
+        if length(intersection) != 0
+            break
+        end
+    end
+    if length(intersection) == 0
+        return gp_i, storage_type(0), distance(M,gp_matrices[gp_i]), ranges
+    end
+    dist, k = findmin(distances(gp_matrices[gp_i]'*M, intersection, gen_mat))
+    return gp_i, intersection[k], dist#, ranges
+end
+
+
+function find_closest_matrix_direct(M, gp_matrices, gen_mat)
+    gp_i = findmin([distance(M,gp_matrices[j]) for j in 1:1080])[2]
+    all_comb = all_bit_combinations(size(gen_mat,3))
+    dist, k = findmin(distances(gp_matrices[gp_i]'*M, all_comb, gen_mat))
+    return gp_i, all_comb[k], dist
 end
 
 
